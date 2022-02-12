@@ -1,0 +1,54 @@
+<!--
+
+  "Hello World" Example
+
+  Follow the 3 steps below to export depth maps from a scene:
+    1. Initialize the depth exporter
+    2. Render the scene using the depth exporter
+    3. Resize depth exporter when window size changes
+
+-->
+<html>
+  <head>
+    <title>Preview 2d Depth Map</title>
+    <link href="../css/basic.css" rel="stylesheet">
+    <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
+    <script src="../js/WebGLDepthExporter.js"></script>
+    <script src="../js/demo.js"></script>
+  </head> 
+  <body>
+    <canvas></canvas>
+
+    <script>
+      // Initialize the usual stuff, along with a scene
+      const canvas = document.querySelector('canvas');
+      const renderer = new THREE.WebGLRenderer({canvas});
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      setupTorusKnotScene();
+
+      // 1. Initialize depth exporter
+      const depthExporter = new THREE.WebGLDepthExporter(renderer);
+
+      function render() {
+        // 2. Render depth to the canvas
+        depthExporter.setRenderTarget(null);
+        depthExporter.render(scene, camera);
+
+        // Rotate camera
+        camera.rotation.y += 0.01;
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render);
+
+      // Resize when window size changes
+      onWindowResize(renderer, depthExporter);
+      window.addEventListener('resize', () => {
+        onWindowResize(renderer);
+        
+        // 3. Update depth exporter size when window size changes
+        let canvas = renderer.domElement;
+        depthExporter.setSize(canvas.width, canvas.height);
+      });
+    </script>
+  </body>
+</html>

@@ -29,8 +29,7 @@ function setupTorusKnotScene(count=50, scale=5) {
     }
 }
 
-
-function resizeRendererToDisplaySize(renderer) {
+function onWindowResize(renderer) {
     const canvas = renderer.domElement;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
