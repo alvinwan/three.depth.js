@@ -1,6 +1,6 @@
 # threejs.depth
 
-Makes depth map export from threeJS simple, using just a few lines of code.
+Makes depth map export from threeJS simple, using just a few lines of code. Includes examples for downloading depth maps, supporting equirectangular 360 depth maps, and integrating with AFrame.
 
 ## Getting Started
 
