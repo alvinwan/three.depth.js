@@ -19,28 +19,12 @@ body {
 				cursor: pointer;
 				background-color: rgba( 0,0,0,.4);
 			}
-  /* .info {
-    position: absolute;
-    left: 1em;
-    top: 1em;
-    padding: 1em;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: xx-small;
-  }
-  .info::after{
-    content: '';
-    position: absolute;
-    border: 10px solid transparent;
-    border-top: 10px solid rgba(0, 0, 0, 0.7);
-    top: 0;
-    left: -10px;
-  } */
 </style>
 <script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://fake-vs-real-stereo.glitch.me/ocean.js"></script>
-    <script src="CubemapToEquirectangular.js"></script>
+    <script src="js/CubemapToEquirectangular.js"></script>
+    <script src="js/CubeOrthographicCamera.js"></script>
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -53,25 +37,13 @@ body {
 
       const canvas = document.querySelector('#c');
       const renderer = new THREE.WebGLRenderer({canvas});
-      
-      // const points = [
-      //    [170, 20],
-      //    [400, 50],
-      //    [225, 120],
-      // ].map((point) => {
-      //   const infoElem = document.createElement('pre');
-      //   document.body.appendChild(infoElem);
-      //   infoElem.className = "info";
-      //   infoElem.style.left = `${point[0] + 10}px`;
-      //   infoElem.style.top = `${point[1]}px`;
-      //   return {
-      //     point,
-      //     infoElem,
-      //   };
-      // });
+      renderer.autoClearDepth = false;
+      renderer.autoClearColor = false;
       
       const renderTarget = new THREE.WebGLRenderTarget(1, 1);
       renderTarget.depthTexture = new THREE.DepthTexture();
+      // depth render target will hold depth values from original scene in color channel
+      // wont need the depth or stencil buffers for this color-only render target
       const depthRenderTarget = new THREE.WebGLRenderTarget(1, 1, {
         depthBuffer: false,
         stenciBuffer: false,
@@ -83,65 +55,77 @@ body {
 			// cubeCamera = new THREE.CubeCamera( .1, 1000, cubeRenderTarget );
       equi = new CubemapToEquirectangular( renderer, true );
 
-      const rtFov = 60;
-      const rtAspect = 1;
-      const rtNear = 0.1;
-      const rtFar = 200;
-      const rtCamera = new THREE.PerspectiveCamera(rtFov, rtAspect, rtNear, rtFar);
-      rtCamera.position.z = 30;
+      const invisibleFov = 90;
+      const invisibleAspect = 1;
+      const invisibleNear = 0.1;
+      const invisibleFar = 100;
+      // const invisibleCamera = new THREE.PerspectiveCamera(invisibleFov, invisibleAspect, invisibleNear, invisibleFar);
+      const invisibleCubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
+      // cubeRenderTarget.depthTexture = new THREE.DepthTexture();
+      const invisibleCubeCamera = new THREE.CubeCamera(invisibleNear, invisibleFar, invisibleCubeRenderTarget)
+      let invisibleCamera = invisibleCubeCamera.children[5];
+      invisibleCamera.position.z = 5;
     
-      const rtScene = new THREE.Scene();
-      rtScene.background = new THREE.Color('white');
+      const invisibleScene = new THREE.Scene();
+      invisibleScene.background = new THREE.Color('white');
     
       // put the camera on a pole (parent it to an object)
       // so we can spin the pole to move the camera around the scene
       const cameraPole = new THREE.Object3D();
-      rtScene.add(cameraPole);
-      cameraPole.add(rtCamera);
+      invisibleScene.add(cameraPole);
+      cameraPole.add(invisibleCubeCamera);
     
       {
         const color = 0xFFFFFF;
         const intensity = 1;
         const light = new THREE.DirectionalLight(color, intensity);
         light.position.set(-1, 2, 4);
-        rtCamera.add(light);
+        invisibleCamera.add(light);
       }
+
+      // Setup the actual scene. This is the scene we'll extract depth values of.
+      function setupScene(scene) {
     
-      const boxWidth = 1;
-      const boxHeight = 1;
-      const boxDepth = 1;
-      const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-    
-      function rand(min, max) {
-        if (max === undefined) {
-          max = min;
-          min = 0;
+        const boxWidth = 1;
+        const boxHeight = 1;
+        const boxDepth = 1;
+        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+      
+        function rand(min, max) {
+          if (max === undefined) {
+            max = min;
+            min = 0;
+          }
+          return min + (max - min) * Math.random();
         }
-        return min + (max - min) * Math.random();
+      
+        function randomColor() {
+          return `hsl(${rand(360) | 0}, ${rand(50, 100) | 0}%, 50%)`;
+        }
+      
+        const numObjects = 100;
+        for (let i = 0; i < numObjects; ++i) {
+          const material = new THREE.MeshPhongMaterial({
+            color: randomColor(),
+          });
+      
+          const cube = new THREE.Mesh(geometry, material);
+          scene.add(cube);
+      
+          cube.position.set(rand(-20, 20), rand(-20, 20), rand(-20, 20));
+          cube.rotation.set(rand(Math.PI), rand(Math.PI), 0);
+          cube.scale.set(rand(3, 6), rand(3, 6), rand(3, 6));
+        }
       }
+
+      setupScene(invisibleScene);
     
-      function randomColor() {
-        return `hsl(${rand(360) | 0}, ${rand(50, 100) | 0}%, 50%)`;
-      }
-    
-      const numObjects = 100;
-      for (let i = 0; i < numObjects; ++i) {
-        const material = new THREE.MeshPhongMaterial({
-          color: randomColor(),
-        });
-    
-        const cube = new THREE.Mesh(geometry, material);
-        rtScene.add(cube);
-    
-        cube.position.set(rand(-20, 20), rand(-20, 20), rand(-20, 20));
-        cube.rotation.set(rand(Math.PI), rand(Math.PI), 0);
-        cube.scale.set(rand(3, 6), rand(3, 6), rand(3, 6));
-      }
-    
-    
-      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
-      const scene = new THREE.Scene();
+      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
+      const cubeCamera = new THREE.CubeOrthographicCamera(-1, 1, 1, -1, -1, 1, cubeRenderTarget);
+      const camera = cubeCamera.children[6];
+      // const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
       camera.position.z = 1;
+      const scene = new THREE.Scene();
     
       const sceneMaterial = new THREE.MeshBasicMaterial({
         map: renderTarget.texture,
@@ -190,49 +174,26 @@ body {
           const canvas = renderer.domElement;
           renderTarget.setSize(canvas.width, canvas.height);
           depthRenderTarget.setSize(canvas.width, canvas.height);
-          rtCamera.aspect = canvas.clientWidth / canvas.clientHeight;
-          rtCamera.updateProjectionMatrix();
+          invisibleCamera.aspect = canvas.clientWidth / canvas.clientHeight;
+          invisibleCamera.updateProjectionMatrix();
         }
     
         cameraPole.rotation.y = time * .1;
     
         // draw render target scene to render target
         renderer.setRenderTarget(renderTarget);
-        renderer.render(rtScene, rtCamera);
+        renderer.clearDepth();
+        renderer.render(invisibleScene, invisibleCamera);
         renderer.setRenderTarget(null);
-        
+        // cubeCamera.update(renderer, invisibleScene);
+
         // render the depth texture to another render target
         renderer.setRenderTarget(depthRenderTarget);
+        renderer.clearColor();
         renderer.render(depthScene, camera);
         renderer.setRenderTarget(null);
-    
-        {
-          const {width, height} = depthRenderTarget;
-          const spaceNeeded = width * height * 4;
-          if (depthValues.length !== spaceNeeded) {
-            depthValues = new Uint8Array(spaceNeeded);
-          }
-          renderer.readRenderTargetPixels(
-              depthRenderTarget,
-              0,
-              0,
-              depthRenderTarget.width,
-              depthRenderTarget.height,
-              depthValues);
-              
-    //       for (const {point, infoElem} of points) {
-    //          const offset = ((height - point[1] - 1) * width + point[0]) * 4;
-    //          const depth = depthValues[offset    ] * ((255 / 256) / (256 * 256 * 256)) +
-    //                        depthValues[offset + 1] * ((255 / 256) / (256 * 256)) +
-    //                        depthValues[offset + 2] * ((255 / 256) / 256);
-    
-             
-    //          infoElem.textContent = `position : ${point[0]}, ${point[1]}
-    // z depth  : ${depth.toFixed(3)}`;
-    //       }    
-        }
         
-        // render the color texture to the canvas
+        // render the depth texture to the canvas
         renderer.render(depthScene, camera);
     
         requestAnimationFrame(render);
@@ -245,6 +206,14 @@ body {
           // cubeCamera.update( renderer, scene );
           // equi.convert( cubeCamera );
           equi.update( camera, depthScene );
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.keyCode >= 48 && e.keyCode < 54) {
+          index = e.keyCode - 48;
+          invisibleCamera = invisibleCubeCamera.children[index];
+          invisibleCamera.position.z = 5;
+        }
       });
     }
     
