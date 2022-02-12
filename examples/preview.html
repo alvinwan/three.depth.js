@@ -1,0 +1,59 @@
+<html>
+  <head>
+    <title>Preview 2d Depth Map</title>
+    <link href="../css/basic.css" rel="stylesheet">
+    <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.125.1/examples/js/controls/OrbitControls.js"></script>
+    <script src="../js/WebGLDepthExporter.js"></script>
+    <script src="../js/demo.js"></script>
+  </head> 
+  <body>
+    <canvas></canvas>
+
+    <script>
+      // Initialize the usual stuff, along with a scene
+      const canvas = document.querySelector('canvas');
+      const renderer = new THREE.WebGLRenderer({canvas});
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      setupTorusKnotScene();
+
+      // Initialize depth exporter
+      const depthExporter = new THREE.WebGLDepthExporter(renderer);
+
+      // Support for some user interaction
+      const controls = new THREE.OrbitControls( camera, renderer.domElement );
+      controls.enableDamping = true; // allow user to drag smoothly
+      let renderMode = 1; // 1 = render depth and 2 = render rgb
+    
+      function render() {
+
+        if (renderMode == 1) {
+          // Render depth to the canvas
+          depthExporter.setRenderTarget(null);
+          depthExporter.render(scene, camera);
+        } else {
+          // Render rgb to the canvas
+          renderer.setRenderTarget(null);
+          renderer.render(scene, camera);
+        }
+
+        // resize if need be
+        if (resizeRendererToDisplaySize(renderer)) {
+          const canvas = renderer.domElement;
+          depthExporter.setSize(canvas.width, canvas.height);
+        }
+
+        controls.update(); // needed since damping enabled
+    
+        requestAnimationFrame(render);
+      }
+      render();
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key == 1 || e.key == 2) {
+          renderMode = e.key;
+        }
+      });
+    </script>
+  </body>
+</html>
