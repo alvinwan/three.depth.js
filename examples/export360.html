@@ -21,17 +21,23 @@
       background-color: rgba( 0,0,0,.4);
     }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-            integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"></script>
+   <link href="../css/basic.css" rel="stylesheet">
+   <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
+   <script src="../js/WebGLDepthExporter.js"></script>
+   <script src="../js/demo.js"></script>
+   
     <script src="../js/CubemapToEquirectangular.js"></script>
-    <script src="../js/WebGLDepthExporter.js"></script>
     <script src="../js/WebGLCubeDepthExporter.js"></script>
   </head> 
   <body>
     <canvas id="c"></canvas>
     <div id="capture" >Capture</div>
+
+    <div id="info">
+			<a href="https://github.com/alvinwan/threejs360" target="_blank" rel="noopener">threejs.360</a> webgl - depth texture<br/>
+			Exports 360 depth via a cubemap, and downloads an equirectangular depth map.<br/>
+      Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
+		</div>
 
     <script>
       function main() {

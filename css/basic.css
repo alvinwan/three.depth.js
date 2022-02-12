@@ -1,8 +1,60 @@
+/**
+ * Styles taken from ThreeJS
+ */
 body {
-    margin: 0;
-  }
+	margin: 0;
+	background-color: #000;
+	color: #fff;
+	font-family: Monospace;
+	font-size: 13px;
+	line-height: 24px;
+	overscroll-behavior: none;
+}
+
+a {
+	color: #ff0;
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+button {
+	cursor: pointer;
+	text-transform: uppercase;
+}
+
+#info {
+	position: fixed;
+	top: 0px;
+	width: 100%;
+	padding: 10px;
+	box-sizing: border-box;
+	text-align: center;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	z-index: 100; /* TODO Solve this in HTML */
+}
+
+a, button, input, select {
+	pointer-events: auto;
+}
+
 canvas {
-  width: 100vw;
-  height: 100vh;
-  display: block;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    z-index: -1;
+}
+
+#notSupported {
+	width: 50%;
+	margin: auto;
+	background-color: #f00;
+	margin-top: 20px;
+	padding: 10px;
 }

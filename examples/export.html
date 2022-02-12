@@ -19,18 +19,24 @@
   <body>
     <canvas></canvas>
 
+    <div id="info">
+			<a href="https://github.com/alvinwan/threejs360" target="_blank" rel="noopener">threejs.360</a> webgl - depth texture<br/>
+			Exports depth map. Toggle between depth map (1) and RGB (2).<br/>
+      Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
+		</div>
+
     <script>
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('canvas');
       const renderer = new THREE.WebGLRenderer({canvas});
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
       setupTorusKnotScene();
 
       // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
       // Support for some user interaction
-      let renderMode = 1; // 1 = render depth and 2 = render rgb
+      let renderMode = 2; // 1 = render depth and 2 = render rgb
     
       function render() {
 
