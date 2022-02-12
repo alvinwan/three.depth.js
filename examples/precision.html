@@ -25,7 +25,7 @@
       const canvas = document.querySelector('canvas');
       const renderer = new THREE.WebGLRenderer({canvas});
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      setupTorusKnotScene();
+      const scene = setupTorusKnotScene();
 
       // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer, {

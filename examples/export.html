@@ -36,11 +36,11 @@
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
       // Support for some user interaction
-      let renderMode = 2; // 1 = render depth and 2 = render rgb
+      let renderMode = 1; // Toggle color: 0 - depth, 1 - color
     
       function render() {
 
-        if (renderMode == 1) {
+        if (renderMode == 0) {
           // 2. Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, camera);

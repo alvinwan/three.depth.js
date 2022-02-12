@@ -40,10 +40,12 @@
 		</div>
 
     <script>
+      // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('#c');
       const renderer = new THREE.WebGLRenderer({canvas});
+      let scene = setupTorusKnotScene();
 
-      // Initialize depth exporters
+      // 1. Initialize depth exporters
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {
         maxPrecision: true
@@ -53,34 +55,25 @@
       // perspective cameras needed for a cubemap.
       const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
       const cubeCamera = new THREE.CubeCamera(0.01, 10, cubeRenderTarget);
-      let canvasCameraIndex = 5; // chose which cube face to render
-
-      // Toggle color on and off
-      let renderMode = 0; // 0 - depth, 1 - color
-    
-      // Setup and animate the scene
-      let scene = setupTorusKnotScene();
       scene.add(cubeCamera);
 
+      // Support for some user interaction
+      let canvasCameraIndex = 5; // chose which cube face to render
+      let renderMode = 0; // Toggle color: 0 - depth, 1 - color
+    
       function render() {
-        if (resizeRendererToDisplaySize(renderer)) { // handle resizing
-          const canvas = renderer.domElement;
-          setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
-          depthExporter.setSize(canvas.width, canvas.height);
-          cubeDepthExporter.setSize(canvas.width, canvas.height);
-          // cubeRenderTarget.setSize(canvas.width, canvas.height); // TODO: why makes erp blank?
-        }
-        cubeCamera.rotation.y += 0.01; // spin the camera around
-
         if (renderMode == 0) {
-          // Render depth to the canvas
+          // 2a. Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, cubeCamera.children[canvasCameraIndex]);
         } else {
+          // Render rgb to the canvas
           renderer.setRenderTarget(null);
           renderer.render(scene, cubeCamera.children[canvasCameraIndex]);
         }
     
+        // Rotate camera
+        cubeCamera.rotation.y += 0.01;
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render); // begin animation
@@ -92,7 +85,7 @@
           var ratio = getCubeCameraAspectRatio(cubeCamera);
           setCubeCameraAspectRatio(cubeCamera, 1);
 
-          // Render depth in all directions to a cubemap
+          // 2b. Render depth in all directions to a cubemap
           cubeDepthExporter.setRenderTarget(cubeRenderTarget);
           cubeDepthExporter.render(scene, cubeCamera);
           cubeDepthExporter.setRenderTarget(null);
@@ -115,6 +108,17 @@
         }
       });
 
+      function onWindowResize() {
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
+        // 3. Update depth exporter size when window size changes
+        depthExporter.setSize(canvas.width, canvas.height);
+        cubeDepthExporter.setSize(canvas.width, canvas.height);
+      }
+
+      onWindowResize();
+      window.addEventListener('resize', onWindowResize);
+
       /**
        * Utilities
        */
@@ -128,17 +132,6 @@
           camera.aspect = aspect;
           camera.updateProjectionMatrix();
         }
-      }
-
-      function resizeRendererToDisplaySize(renderer) {
-        const canvas = renderer.domElement;
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
-        const needResize = canvas.width !== width || canvas.height !== height;
-        if (needResize) {
-          renderer.setSize(width, height, false);
-        }
-        return needResize;
       }
     </script>
   </body>
