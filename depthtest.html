@@ -25,6 +25,7 @@ body {
     <script src="https://fake-vs-real-stereo.glitch.me/ocean.js"></script>
     <script src="js/CubemapToEquirectangular.js"></script>
     <script src="js/CubeOrthographicCamera.js"></script>
+    <script src="js/WebGLDepthRenderer.js"></script>
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -35,16 +36,12 @@ body {
 
       const canvas = document.querySelector('#c');
       const renderer = new THREE.WebGLRenderer({canvas});
+      const depthRenderer = new THREE.WebGLDepthRenderer({canvas});
 
       // Not used, but needed for the camera to be created. This is not used 
       // because depth textures on cube render targets are not supported. Instead,
       // we use the standard render target
       const notUsedCubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
-
-      // Initialize a standard render target that can store depth textures for
-      // usage later on.
-      const invisibleRenderTarget = new THREE.WebGLRenderTarget(1, 1);
-      invisibleRenderTarget.depthTexture = new THREE.DepthTexture();
 
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
@@ -73,41 +70,17 @@ body {
       // Use orthographic cameras since we'll be rendering to flat "TV screen"
       // planes.
       const cubeCamera = new THREE.CubeOrthographicCamera(-1, 1, 1, -1, -1, 1, cubeRenderTarget);
-
-      // Initialize the flat "TV screen" planes, which will hold the depth values 
-      // as a color texture.
-      const planeGeo = new THREE.PlaneBufferGeometry(2, 2);      
-      const depthMaterial = new THREE.MeshBasicMaterial({
-        map: invisibleRenderTarget.depthTexture,
-      });
-      depthMaterial.onBeforeCompile = function(shader) {
-        // the <packing> GLSL chunk from three.js has the packDeathToRGBA function.
-        // then at the end of the shader the default MaterialBasicShader has
-        // already read from the material's `map` texture (the depthTexture)
-        // which has depth in 'r' and assigned it to gl_FragColor
-        shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <common>',
-            '#include <common>\n#include <packing>',
-        ).replace(
-            '#include <fog_fragment>',
-            'gl_FragColor = packDepthToRGBA( gl_FragColor.r );',
-        );
-      };  
-    
-      // Create a flat "TV screen" scene, to render the depth texture to.
-      const depthScene = new THREE.Scene();
-      const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
-      depthScene.position.set(0, 0, -1);
-      depthScene.add(depthPlane);
     
       // Animate the scene: rotate the camera around, render the depth at each
       // frame.
       function render(time) {
         time *= 0.001;
     
-        if (resizeRendererToDisplaySize(renderer)) {
-          const canvas = renderer.domElement;
-          invisibleRenderTarget.setSize(canvas.width, canvas.height);
+        if (resizeRendererToDisplaySize(depthRenderer)) {
+          const canvas = depthRenderer.domElement;
+          // TODO: update DepthRenderer 
+          // invisibleRenderTarget.setSize(canvas.width, canvas.height);
+          depthRenderer.invisibleRenderTarget.setSize(canvas.width, canvas.height);
 
           // TODO: this causes the depth texture to be blank - all black?
           // cubeRenderTarget.setSize(canvas.width, canvas.height);
@@ -115,7 +88,9 @@ body {
         }
     
         cameraPole.rotation.y = time * .1;
-        renderDepthTo(null, canvasCameraIndex); // use null to specify canvas
+
+        depthRenderer.setRenderTarget(null);
+        depthRenderer.render(invisibleScene, invisibleCubeCamera.children[5]);
     
         requestAnimationFrame(render);
       }
@@ -133,7 +108,6 @@ body {
           setCubeCameraAspect(invisibleCubeCamera, 1);
 
           // Render the depth texture to all faces of the cube, one at a time
-          renderer.clearColor();
           for (let i = 0; i < 6; i++) {
             renderDepthTo(cubeRenderTarget, i);
           }
@@ -185,7 +159,7 @@ body {
         let {depthCamera, invisibleCamera} = getCameras(cameraIndex);
 
         // draw render target scene to render target
-        renderer.setRenderTarget(invisibleRenderTarget);
+        renderer.setRenderTarget(depthRenderer.invisibleRenderTarget);
         renderer.render(invisibleScene, invisibleCamera);
         renderer.setRenderTarget(null);
 
@@ -194,7 +168,7 @@ body {
         
         // render the depth texture to the provided target
         renderer.setRenderTarget(renderTarget, activeCubeFace);
-        renderer.render(depthScene, depthCamera);
+        renderer.render(depthRenderer.depthScene, depthRenderer.depthCamera);
         renderer.setRenderTarget(null);
       }
     }
