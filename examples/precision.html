@@ -1,11 +1,6 @@
 <!--
 
-  "Hello World" Example
-
-  Follow the 3 steps below to export depth maps from a scene:
-    1. Initialize the depth exporter
-    2. Render the scene using the depth exporter
-    3. Resize depth exporter when window size changes
+  "Smooth Depth Map" Example
 
 -->
 <html>
@@ -23,11 +18,13 @@
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('canvas');
       const renderer = new THREE.WebGLRenderer({canvas});
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       setupTorusKnotScene();
 
       // 1. Initialize depth exporter
-      const depthExporter = new THREE.WebGLDepthExporter(renderer);
+      const depthExporter = new THREE.WebGLDepthExporter(renderer, {
+        maxPrecision: true
+      });
 
       function render() {
         // 2. Render depth to the canvas
