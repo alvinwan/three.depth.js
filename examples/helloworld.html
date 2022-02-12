@@ -20,7 +20,7 @@
     <canvas></canvas>
     <div id="info">
 			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Displays a depth map.<br/>
+			Displays a depth map. Toggle color on/off (c)<br/>
       Created by <a href="http://twitter.com/lvinwan">@lvinwan</a> and <a href="http://twitter.com/mattdesl" target="_blank" rel="noopener">@mattdesl</a>.
 		</div>
 
@@ -28,7 +28,7 @@
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('canvas');
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
-      setupTorusKnotScene();
+      const scene = setupTorusKnotScene();
 
       // Initialize renderer
       const renderer = new THREE.WebGLRenderer({canvas});
@@ -43,6 +43,24 @@
       // 3. Render depth to the canvas
       depthExporter.setRenderTarget(null);
       depthExporter.render(scene, camera);
+
+      // Support some user interaction. Press `c` to toggle color on/off.
+      let renderMode = 0;
+      document.addEventListener('keydown', function(e) {
+        if (e.key == 'c') {
+          renderMode = (renderMode + 1) % 2;
+        }
+
+        if (renderMode == 0) {
+          // render depth
+          depthExporter.setRenderTarget(null);
+          depthExporter.render(scene, camera);
+        } else {
+          // render rgb
+          renderer.setRenderTarget(null);
+          renderer.render(scene, camera);
+        }
+      })
     </script>
   </body>
 </html>

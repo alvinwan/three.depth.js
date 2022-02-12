@@ -1,5 +1,5 @@
 function setupTorusKnotScene(count=50, scale=5) {
-    scene = new THREE.Scene();
+    let scene = new THREE.Scene();
 
     const geometry = new THREE.TorusKnotGeometry( 1, 0.3, 128, 64 );
     const material = new THREE.MeshPhongMaterial( { color: 'blue' } );
@@ -27,6 +27,8 @@ function setupTorusKnotScene(count=50, scale=5) {
         light.position.set(-1, 2, 4);
         scene.add(light);
     }
+
+    return scene;
 }
 
 function onWindowResizeRenderer(renderer) {

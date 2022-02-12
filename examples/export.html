@@ -21,7 +21,7 @@
 
     <div id="info">
 			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Exports depth map. Toggle between depth map (1) and RGB (2).<br/>
+			Exports depth map. Toggle color on/off (c).<br/>
       Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
 		</div>
 
@@ -30,7 +30,7 @@
       const canvas = document.querySelector('canvas');
       const renderer = new THREE.WebGLRenderer({canvas});
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
-      setupTorusKnotScene();
+      const scene = setupTorusKnotScene();
 
       // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
@@ -58,8 +58,8 @@
 
       // Update render mode when key is pressed
       document.addEventListener('keydown', function(e) {
-        if (e.key == 1 || e.key == 2) {
-          renderMode = e.key;
+        if (e.key == 'c') {
+          renderMode = (renderMode + 1) % 2;
         }
       });
 

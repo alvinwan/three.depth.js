@@ -35,158 +35,111 @@
 
     <div id="info">
 			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Exports 360 depth via a cubemap, and downloads an equirectangular depth map.<br/>
+			Exports cubemap depth (1-6), downloads equirectangular depth (top-left button), toggle color (c).<br/>
       Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
 		</div>
 
     <script>
-      function main() {
+      const canvas = document.querySelector('#c');
+      const renderer = new THREE.WebGLRenderer({canvas});
 
-        const canvas = document.querySelector('#c');
-        const renderer = new THREE.WebGLRenderer({canvas});
+      // Initialize depth exporters
+      const depthExporter = new THREE.WebGLDepthExporter(renderer);
+      const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {
+        maxPrecision: true
+      });
 
-        // Initialize depth exporters
-        const depthExporter = new THREE.WebGLDepthExporter(renderer);
-        const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {
-          maxPrecision: true
-        });
+      // Use a cube camera so that we don't need to manually initialize the 6 
+      // perspective cameras needed for a cubemap.
+      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
+      const cubeCamera = new THREE.CubeCamera(0.01, 10, cubeRenderTarget);
+      let canvasCameraIndex = 5; // chose which cube face to render
 
-        // Use a cube camera so that we don't need to manually initialize the 6 
-        // perspective cameras needed for a cubemap.
-        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-        const cubeCamera = new THREE.CubeCamera(0.1, 30, cubeRenderTarget);
-        let canvasCameraIndex = 5; // chose which cube face to render
-      
-        // Setup and animate the scene
-        const {scene, cameraPole} = setupScene(cubeCamera);
-        function render(time) {
-          time *= 0.001;
-      
-          if (resizeRendererToDisplaySize(renderer)) { // handle resizing
-            const canvas = renderer.domElement;
-            setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
-            depthExporter.setSize(canvas.width, canvas.height);
-            cubeDepthExporter.setSize(canvas.width, canvas.height);
-            // cubeRenderTarget.setSize(canvas.width, canvas.height); // TODO: why makes erp blank?
-          }
-          cameraPole.rotation.y = time * .1; // spin the camera around
+      // Toggle color on and off
+      let renderMode = 0; // 0 - depth, 1 - color
+    
+      // Setup and animate the scene
+      let scene = setupTorusKnotScene();
+      scene.add(cubeCamera);
 
+      function render() {
+        if (resizeRendererToDisplaySize(renderer)) { // handle resizing
+          const canvas = renderer.domElement;
+          setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
+          depthExporter.setSize(canvas.width, canvas.height);
+          cubeDepthExporter.setSize(canvas.width, canvas.height);
+          // cubeRenderTarget.setSize(canvas.width, canvas.height); // TODO: why makes erp blank?
+        }
+        cubeCamera.rotation.y += 0.01; // spin the camera around
+
+        if (renderMode == 0) {
           // Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, cubeCamera.children[canvasCameraIndex]);
-      
-          requestAnimationFrame(render);
+        } else {
+          renderer.setRenderTarget(null);
+          renderer.render(scene, cubeCamera.children[canvasCameraIndex]);
         }
-        requestAnimationFrame(render); // begin animation
+    
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render); // begin animation
 
-        // Setup cubemap to equirectangular conversion
-        const equi = new CubemapToEquirectangular( renderer, false );
-        document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
-            // Reset aspect ratio to 1. No idea why this is needed, but it is.
-            var ratio = getCubeCameraAspectRatio(cubeCamera);
-            setCubeCameraAspectRatio(cubeCamera, 1);
+      // Setup cubemap to equirectangular conversion
+      const equi = new CubemapToEquirectangular( renderer, false );
+      document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
+          // Reset aspect ratio to 1. No idea why this is needed, but it is.
+          var ratio = getCubeCameraAspectRatio(cubeCamera);
+          setCubeCameraAspectRatio(cubeCamera, 1);
 
-            // Render depth in all directions to a cubemap
-            cubeDepthExporter.setRenderTarget(cubeRenderTarget);
-            cubeDepthExporter.render(scene, cubeCamera);
-            cubeDepthExporter.setRenderTarget(null);
+          // Render depth in all directions to a cubemap
+          cubeDepthExporter.setRenderTarget(cubeRenderTarget);
+          cubeDepthExporter.render(scene, cubeCamera);
+          cubeDepthExporter.setRenderTarget(null);
 
-            // Unmanaged conversion. Do not use managed version since it will attempt 
-            // a re-render. We previously manually rendered every cube face ourselves
-            // already. This manual rendering, face by face, to save the depth values,
-            // is necessary, since the *cube render target doesnt support depth textures.
-            equi.convert( cubeCamera );
+          // Unmanaged conversion. Do not use managed version since it will attempt 
+          // a re-render. We previously manually rendered every cube face ourselves
+          // already. This manual rendering, face by face, to save the depth values,
+          // is necessary, since the *cube render target doesnt support depth textures.
+          equi.convert( cubeCamera );
 
-            // Restore aspect ratio
-            setCubeCameraAspectRatio(cubeCamera, ratio);
-        });
+          // Restore aspect ratio
+          setCubeCameraAspectRatio(cubeCamera, ratio);
+      });
 
-        document.addEventListener('keydown', function(e) {
-          if (e.keyCode >= 49 && e.keyCode < 55) {
-            canvasCameraIndex = e.keyCode - 49;
-          }
-        });
-
-        /**
-         * Utilities
-         */
-
-        function getCubeCameraAspectRatio(cubeCamera) {
-          return cubeCamera.children[0].aspect;
+      document.addEventListener('keydown', function(e) {
+        if (e.keyCode >= 49 && e.keyCode < 55) {
+          canvasCameraIndex = e.keyCode - 49;
+        } else if (e.key == 'c') {
+          renderMode = (renderMode + 1) % 2;
         }
+      });
 
-        function setCubeCameraAspectRatio(cubeCamera, aspect) {
-          for (let camera of cubeCamera.children) {
-            camera.aspect = aspect;
-            camera.updateProjectionMatrix();
-          }
-        }
+      /**
+       * Utilities
+       */
 
-        function resizeRendererToDisplaySize(renderer) {
-          const canvas = renderer.domElement;
-          const width = canvas.clientWidth;
-          const height = canvas.clientHeight;
-          const needResize = canvas.width !== width || canvas.height !== height;
-          if (needResize) {
-            renderer.setSize(width, height, false);
-          }
-          return needResize;
+      function getCubeCameraAspectRatio(cubeCamera) {
+        return cubeCamera.children[0].aspect;
+      }
+
+      function setCubeCameraAspectRatio(cubeCamera, aspect) {
+        for (let camera of cubeCamera.children) {
+          camera.aspect = aspect;
+          camera.updateProjectionMatrix();
         }
       }
 
-      function setupScene(camera) {
-          const scene = new THREE.Scene();
-          scene.background = new THREE.Color('white');
-        
-          // put the camera on a pole (parent it to an object)
-          // so we can spin the pole to move the camera around the scene
-          const cameraPole = new THREE.Object3D();
-          scene.add(cameraPole);
-          cameraPole.add(camera);
-        
-          {
-            const color = 0xFFFFFF;
-            const intensity = 1;
-            const light = new THREE.DirectionalLight(color, intensity);
-            light.position.set(-1, 2, 4);
-            scene.add(light);
-          }
-      
-          const boxWidth = 1;
-          const boxHeight = 1;
-          const boxDepth = 1;
-          const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        
-          function rand(min, max) {
-            if (max === undefined) {
-              max = min;
-              min = 0;
-            }
-            return min + (max - min) * Math.random();
-          }
-        
-          function randomColor() {
-            return `hsl(${rand(360) | 0}, ${rand(50, 100) | 0}%, 50%)`;
-          }
-        
-          const numObjects = 100;
-          for (let i = 0; i < numObjects; ++i) {
-            const material = new THREE.MeshPhongMaterial({
-              color: randomColor(),
-            });
-        
-            const cube = new THREE.Mesh(geometry, material);
-            scene.add(cube);
-        
-            cube.position.set(rand(-20, 20), rand(-20, 20), rand(-20, 20));
-            cube.rotation.set(rand(Math.PI), rand(Math.PI), 0);
-            cube.scale.set(rand(3, 6), rand(3, 6), rand(3, 6));
-          }
-
-          return {scene, cameraPole};
+      function resizeRendererToDisplaySize(renderer) {
+        const canvas = renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+          renderer.setSize(width, height, false);
         }
-      
-      main();
+        return needResize;
+      }
     </script>
   </body>
 </html>
