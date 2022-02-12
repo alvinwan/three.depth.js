@@ -104,8 +104,19 @@ body {
           setCubeCameraAspect(invisibleCubeCamera, 1);
 
           // Render the depth texture to all faces of the cube, one at a time
-          for (let i = 0; i < 6; i++) {
-            renderDepthTo(cubeRenderTarget, i);
+          for (let cameraIndex = 0; cameraIndex < 6; cameraIndex++) {
+            let depthCamera = cubeCamera.children[cameraIndex]; // camera in depth space
+            let invisibleCamera = invisibleCubeCamera.children[cameraIndex]; // camera in invisible space
+
+            // draw render target scene to render target
+            renderer.setRenderTarget(depthRenderer.invisibleRenderTarget);
+            renderer.render(invisibleScene, invisibleCamera);
+            renderer.setRenderTarget(null);
+            
+            // render the depth texture to the provided target
+            renderer.setRenderTarget(cubeRenderTarget, cameraIndex);
+            renderer.render(depthRenderer.depthScene, depthRenderer.depthCamera);
+            renderer.setRenderTarget(null);
           }
 
           // Unmanaged conversion. Do not use managed version since it will attempt 
@@ -141,31 +152,6 @@ body {
           renderer.setSize(width, height, false);
         }
         return needResize;
-      }
-
-      function getCameras(cameraIndex) {
-        // Select appropriate cameras given camera index
-        let depthCamera = cubeCamera.children[cameraIndex]; // camera in depth space
-        let invisibleCamera = invisibleCubeCamera.children[cameraIndex]; // camera in invisible space
-
-        return {depthCamera, invisibleCamera};
-      }
-
-      function renderDepthTo(renderTarget, cameraIndex = 6) {
-        let {depthCamera, invisibleCamera} = getCameras(cameraIndex);
-
-        // draw render target scene to render target
-        renderer.setRenderTarget(depthRenderer.invisibleRenderTarget);
-        renderer.render(invisibleScene, invisibleCamera);
-        renderer.setRenderTarget(null);
-
-        // set active cube face if the render target is a cube render target
-        var activeCubeFace = renderTarget instanceof THREE.WebGLCubeRenderTarget ? cameraIndex : undefined;
-        
-        // render the depth texture to the provided target
-        renderer.setRenderTarget(renderTarget, activeCubeFace);
-        renderer.render(depthRenderer.depthScene, depthRenderer.depthCamera);
-        renderer.setRenderTarget(null);
       }
     }
 
