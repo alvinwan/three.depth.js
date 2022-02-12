@@ -53,7 +53,6 @@ body {
       const invisibleNear = 0.1;
       const invisibleFar = 100;
       const invisibleCubeCamera = new THREE.CubeCamera(invisibleNear, invisibleFar, notUsedCubeRenderTarget)
-      invisibleCubeCamera.position.z = 1;
 
       // Choose the camera we'll by default render to the canvas.
       let canvasCameraIndex = 5;
@@ -105,15 +104,14 @@ body {
       // frame.
       function render(time) {
         time *= 0.001;
-
-        let {invisibleCamera, depthScene} = getCameras(canvasCameraIndex);
     
         if (resizeRendererToDisplaySize(renderer)) {
           const canvas = renderer.domElement;
           invisibleRenderTarget.setSize(canvas.width, canvas.height);
-          // depthRenderTarget.setSize(canvas.width, canvas.height); // how to resize cube render target?
-          invisibleCamera.aspect = canvas.clientWidth / canvas.clientHeight;
-          invisibleCamera.updateProjectionMatrix();
+
+          // TODO: this causes the depth texture to be blank - all black?
+          // cubeRenderTarget.setSize(canvas.width, canvas.height);
+          setCubeCameraAspect(invisibleCubeCamera, canvas.clientWidth / canvas.clientHeight);
         }
     
         cameraPole.rotation.y = time * .1;
@@ -131,8 +129,10 @@ body {
        */
 
       document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
+          // Reset aspect ratio to 1. No idea why this is needed, but it is.
+          setCubeCameraAspect(invisibleCubeCamera, 1);
 
-          // render the depth texture to all faces of the cube, one at a time
+          // Render the depth texture to all faces of the cube, one at a time
           renderer.clearColor();
           for (let i = 0; i < 6; i++) {
             renderDepthTo(cubeRenderTarget, i);
@@ -154,6 +154,13 @@ body {
       /**
        * Utilities
        */
+
+      function setCubeCameraAspect(cubeCamera, aspect) {
+        for (let camera of cubeCamera.children) {
+          camera.aspect = aspect;
+          camera.updateProjectionMatrix();
+        }
+      }
 
       function resizeRendererToDisplaySize(renderer) {
         const canvas = renderer.domElement;
