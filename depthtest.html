@@ -24,7 +24,6 @@ body {
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://fake-vs-real-stereo.glitch.me/ocean.js"></script>
     <script src="js/CubemapToEquirectangular.js"></script>
-    <script src="js/CubeOrthographicCamera.js"></script>
     <script src="js/WebGLDepthExporter.js"></script>
     <script src="js/WebGLCubeDepthExporter.js"></script>
 </head>
@@ -40,10 +39,10 @@ body {
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
 
-      // Not used, but needed for the camera to be created. This is not used 
-      // because depth textures on cube render targets are not supported. Instead,
-      // we use the standard render target
-      const notUsedCubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
+      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024, {
+        depthBuffer: false,
+        stenciBuffer: false,
+      });
 
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
@@ -60,18 +59,6 @@ body {
       const scenePackage = setupScene(invisibleCubeCamera);
       const invisibleScene = scenePackage.scene;
       const cameraPole = scenePackage.cameraPole;
-    
-      // depth render target will hold depth values from original scene in color 
-      // channel. wont need the depth or stencil buffers for this color-only render
-      // target
-      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024, {
-        depthBuffer: false,
-        stenciBuffer: false,
-      });
-
-      // Use orthographic cameras since we'll be rendering to flat "TV screen"
-      // planes.
-      const cubeCamera = new THREE.CubeOrthographicCamera(-1, 1, 1, -1, -1, 1, cubeRenderTarget);
     
       // Animate the scene: rotate the camera around, render the depth at each
       // frame.
@@ -115,7 +102,7 @@ body {
           // a re-render. We previously manually rendered every cube face ourselves
           // already. This manual rendering, face by face, to save the depth values,
           // is necessary, since the *cube render target doesnt support depth textures.
-          equi.convert( cubeCamera );
+          equi.convert( invisibleCubeCamera );
       });
 
       document.addEventListener('keydown', function(e) {
