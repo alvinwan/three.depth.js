@@ -1,48 +1,16 @@
 /**
  * Args:
  *   renderer: the renderer to export the depth from
- *   near: the near plane of the camera (only if maxPrecision = false)
- *   far: the far plane of the camera (only if maxPrecision = false)
- *   maxPrecision: whether to pack the depth to RGB (true) or [0, 1] (false)
+ *   near: the near plane of the camera (only if packing = THREE.BasicDepthPacking)
+ *   far: the far plane of the camera (only if packing = THREE.BasicDepthPacking)
+ *   packing: whether to pack the depth to RGB (THREE.RGBADepthPacking) or [0, 1] (THREE.BasicDepthPacking)
  */
 class WebGLDepthExporter {
-    FRAGMENT_SHADER = `#include <packing>
-
-varying vec2 vUv;
-uniform sampler2D tDiffuse;
-uniform sampler2D tDepth;
-uniform float cameraNear;
-uniform float cameraFar;
-
-
-float readDepth( sampler2D depthSampler, vec2 coord ) {
-    float fragCoordZ = texture2D( depthSampler, coord ).x;
-    float viewZ = perspectiveDepthToViewZ( fragCoordZ, cameraNear, cameraFar );
-    return viewZToOrthographicDepth( viewZ, cameraNear, cameraFar );
-}
-
-void main() {
-    //vec3 diffuse = texture2D( tDiffuse, vUv ).rgb;
-    float depth = readDepth( tDepth, vUv );
-
-    gl_FragColor.rgb = 1.0 - vec3( depth );
-    gl_FragColor.a = 1.0;
-}`;
-
-    VERTEX_SHADER = `varying vec2 vUv;
-
-void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-
     constructor(renderer, {
-        maxPrecision = false,
-        near = null,
-        far = null,
+        packing = THREE.BasicDepthPacking,
     } = {}) {
         this.renderer = renderer;
-        this.maxPrecision = maxPrecision;
+        this.packing = packing;
 
         // Initialize a standard render target that can store depth textures for
         // usage later on.
@@ -53,17 +21,12 @@ void main() {
         // as a color texture.
         const planeGeo = new THREE.PlaneBufferGeometry(2, 2);
 
-        let depthMaterial;
-        if (maxPrecision) {
-            depthMaterial = this._getPreciseDepthMaterial();
-        } else {
-            depthMaterial = this._getDepthMaterial(near, far);
-        }
-        this.depthMaterial = depthMaterial;
+        // Initialize depth material to use the depth texture as a color texture.
+        this.depthMaterial = this._getDepthMaterial(packing);
 
         // Create a flat "TV screen" scene, to render the depth texture to.
         this.depthScene = new THREE.Scene();
-        const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
+        const depthPlane = new THREE.Mesh(planeGeo, this.depthMaterial);
         depthPlane.position.set(0, 0, -1); // TODO: wut
         this.depthScene.add(depthPlane);
 
@@ -88,15 +51,6 @@ void main() {
         // Restore original render target
         this.renderer.setRenderTarget(renderTarget, activeCubeFace);
 
-        if (!this.maxPrecision) {
-            // If we're not packing depth to RGB, we need to update the 
-            // depth texture with the appropriate values, for the shader.
-            this.depthMaterial.uniforms.cameraNear.value = camera.near;
-            this.depthMaterial.uniforms.cameraFar.value = camera.far;
-            this.depthMaterial.uniforms.tDiffuse.value = this.invisibleRenderTarget.texture;
-            this.depthMaterial.uniforms.tDepth.value = this.invisibleRenderTarget.depthTexture;
-        }
-
         // Render depth texture to the provided target.
         this.renderer.render(this.depthScene, this.depthCamera);
     }
@@ -107,14 +61,22 @@ void main() {
 
     /**
      * Create a material that renders the depth texture as a color texture.
-     * The color texture specifically packs the depth values to RGB. To decode this,
+     * If packing = THREE.BasicDepthPacking, the depth is packed to [0, 1]. Else,
+     * the depth is packed to RGB. To decode depth packed in RGB color channels, 
      * compute a base 256 number:
      *  
      *      const depth = r * ((255 / 256) / (256 * 256 * 256)) +
      *                    g * ((255 / 256) / (256 * 256)) +
      *                    b * ((255 / 256) / 256);
      */
-    _getPreciseDepthMaterial() {
+    _getDepthMaterial(packing) {
+        let fragmentShaderLine;
+        if (packing === THREE.RGBADepthPacking) {
+            fragmentShaderLine = WebGLDepthExporterShaders.fragmentShaderLineRGB;
+        } else {
+            fragmentShaderLine = WebGLDepthExporterShaders.fragmentShaderLineBasic;
+        }
+
         const depthMaterial = new THREE.MeshBasicMaterial({
             map: this.invisibleRenderTarget.depthTexture,
         });
@@ -128,24 +90,16 @@ void main() {
                 '#include <common>\n#include <packing>'
             ).replace(
                 '#include <fog_fragment>',
-                'gl_FragColor = packDepthToRGBA( gl_FragColor.r );'
+                fragmentShaderLine,
             );
         };
         return depthMaterial;
     }
+}
 
-    _getDepthMaterial(near, far) {
-        return new THREE.ShaderMaterial( {
-            vertexShader: this.VERTEX_SHADER,
-            fragmentShader: this.FRAGMENT_SHADER,
-            uniforms: {
-                cameraNear: { value: near },
-                cameraFar: { value: far },
-                tDiffuse: { value: null },
-                tDepth: { value: null }
-            }
-        } );
-    }
+class WebGLDepthExporterShaders {
+    static fragmentShaderLineRGB = 'gl_FragColor = packDepthToRGBA( gl_FragColor.r );';
+    static fragmentShaderLineBasic = 'gl_FragColor.rgb = (1.0 - vec3( gl_FragColor.r )) * 255.0;\ngl_FragColor.a = 1.0;';
 }
 
 THREE.WebGLDepthExporter = WebGLDepthExporter;

@@ -47,9 +47,7 @@
 
       // 1. Initialize depth exporters
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
-      const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {
-        maxPrecision: true
-      });
+      const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
 
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
