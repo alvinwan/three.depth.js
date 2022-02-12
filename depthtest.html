@@ -78,10 +78,6 @@ body {
     
         if (resizeRendererToDisplaySize(depthRenderer)) {
           const canvas = depthRenderer.domElement;
-          // TODO: update DepthRenderer 
-          // invisibleRenderTarget.setSize(canvas.width, canvas.height);
-          depthRenderer.invisibleRenderTarget.setSize(canvas.width, canvas.height);
-
           // TODO: this causes the depth texture to be blank - all black?
           // cubeRenderTarget.setSize(canvas.width, canvas.height);
           setCubeCameraAspect(invisibleCubeCamera, canvas.clientWidth / canvas.clientHeight);

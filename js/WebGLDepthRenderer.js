@@ -2,8 +2,6 @@
 // continue using that to override the render method (I think)
 function WebGLDepthRenderer(parameters) {
     THREE.WebGLRenderer.call(this, parameters);
-
-    this.parentRender = this.render;
     
     // Initialize a standard render target that can store depth textures for
     // usage later on.
@@ -41,6 +39,7 @@ function WebGLDepthRenderer(parameters) {
 
     // Again, using this.<method> = ... was the only way I could get this to
     // override the base WebGLRenderer render method.
+    this.parentRender = this.render;
     this.render = function(scene, camera) {
         // Get original render target
         var renderTarget = this.getRenderTarget();
@@ -53,6 +52,15 @@ function WebGLDepthRenderer(parameters) {
         // Render depth texture to the provided target.
         this.setRenderTarget(renderTarget);
         this.parentRender(this.depthScene, this.depthCamera);
+    }
+
+    this.parentSetSize = this.setSize;
+    this.setSize = function(width, height, updateStyle) {
+        this.parentSetSize(width, height, updateStyle);
+
+        const canvas = this.domElement;
+        // TODO: should this be canvas.width and canvas.height?
+        this.invisibleRenderTarget.setSize(width, height);
     }
 }
 
