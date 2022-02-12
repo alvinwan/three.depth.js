@@ -25,7 +25,7 @@ body {
     <script src="https://fake-vs-real-stereo.glitch.me/ocean.js"></script>
     <script src="js/CubemapToEquirectangular.js"></script>
     <script src="js/CubeOrthographicCamera.js"></script>
-    <script src="js/WebGLDepthRenderer.js"></script>
+    <script src="js/WebGLDepthExporter.js"></script>
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -36,7 +36,7 @@ body {
 
       const canvas = document.querySelector('#c');
       const renderer = new THREE.WebGLRenderer({canvas});
-      const depthRenderer = new THREE.WebGLDepthRenderer({canvas});
+      const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
       // Not used, but needed for the camera to be created. This is not used 
       // because depth textures on cube render targets are not supported. Instead,
@@ -76,17 +76,18 @@ body {
       function render(time) {
         time *= 0.001;
     
-        if (resizeRendererToDisplaySize(depthRenderer)) {
-          const canvas = depthRenderer.domElement;
+        if (resizeRendererToDisplaySize(renderer)) {
+          const canvas = renderer.domElement;
           // TODO: this causes the depth texture to be blank - all black?
           // cubeRenderTarget.setSize(canvas.width, canvas.height);
           setCubeCameraAspect(invisibleCubeCamera, canvas.clientWidth / canvas.clientHeight);
+          depthExporter.setSize(canvas.width, canvas.height);
         }
     
         cameraPole.rotation.y = time * .1;
 
-        depthRenderer.setRenderTarget(null);
-        depthRenderer.render(invisibleScene, invisibleCubeCamera.children[5]);
+        depthExporter.setRenderTarget(null);
+        depthExporter.render(invisibleScene, invisibleCubeCamera.children[5]);
     
         requestAnimationFrame(render);
       }
@@ -109,13 +110,13 @@ body {
             let invisibleCamera = invisibleCubeCamera.children[cameraIndex]; // camera in invisible space
 
             // draw render target scene to render target
-            renderer.setRenderTarget(depthRenderer.invisibleRenderTarget);
+            renderer.setRenderTarget(depthExporter.invisibleRenderTarget);
             renderer.render(invisibleScene, invisibleCamera);
             renderer.setRenderTarget(null);
             
             // render the depth texture to the provided target
             renderer.setRenderTarget(cubeRenderTarget, cameraIndex);
-            renderer.render(depthRenderer.depthScene, depthRenderer.depthCamera);
+            renderer.render(depthExporter.depthScene, depthExporter.depthCamera);
             renderer.setRenderTarget(null);
           }
 

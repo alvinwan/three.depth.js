@@ -1,6 +1,6 @@
-class WebGLDepthRenderer extends THREE.WebGLRenderer {
-    constructor(parameters) {
-        super(parameters);
+class WebGLDepthExporter {
+    constructor(renderer) {
+        this.renderer = renderer;
 
         // Initialize a standard render target that can store depth textures for
         // usage later on.
@@ -35,32 +35,32 @@ class WebGLDepthRenderer extends THREE.WebGLRenderer {
 
         // Create an orthographic camera for the flat "TV screen" scene.
         this.depthCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+    }
 
-        this._render = this.render;  // instance method not available in prototype
-        this.render = function(scene, camera) {
-            // Get original render target
-            var renderTarget = this.getRenderTarget();
-            var activeCubeFace = this.getActiveCubeFace();
+    setRenderTarget(renderTarget, activeCubeFace) {
+        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
+    }
 
-            // Draw scene into invisible render target.
-            this.setRenderTarget(this.invisibleRenderTarget);
-            this._render(scene, camera);
-            this.setRenderTarget(null);
-            
-            // Restore original render target
-            this.setRenderTarget(renderTarget, activeCubeFace);
+    render(scene, camera) {
+        // Get original render target
+        var renderTarget = this.renderer.getRenderTarget();
+        var activeCubeFace = this.renderer.getActiveCubeFace();
 
-            // Render depth texture to the provided target.
-            this._render(this.depthScene, this.depthCamera);
-        };
+        // Draw scene into invisible render target.
+        this.renderer.setRenderTarget(this.invisibleRenderTarget);
+        this.renderer.render(scene, camera);
+        this.renderer.setRenderTarget(null);
+        
+        // Restore original render target
+        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
 
-        const setSize = this.setSize.bind(this); // instance method not available in prototype
-        this.setSize = function (width, height, updateStyle) {
-            setSize(width, height, updateStyle);
-            // TODO: should this be canvas.width and canvas.height?
-            this.invisibleRenderTarget.setSize(width, height);
-        };
+        // Render depth texture to the provided target.
+        this.renderer.render(this.depthScene, this.depthCamera);
+    }
+
+    setSize(width, height) {
+        this.invisibleRenderTarget.setSize(width, height);
     }
 }
 
-THREE.WebGLDepthRenderer = WebGLDepthRenderer;
+THREE.WebGLDepthExporter = WebGLDepthExporter;
