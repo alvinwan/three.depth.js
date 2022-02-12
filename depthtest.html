@@ -1,0 +1,255 @@
+<html>
+    <head>
+<style>
+body {
+    margin: 0;
+  }
+  #c {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+  }
+  #capture{
+				position: absolute;
+				left: 20px;
+				top: 20px;
+				padding: 10px;
+				border: 1px solid white;
+				z-index: 100;
+				cursor: pointer;
+				background-color: rgba( 0,0,0,.4);
+			}
+  /* .info {
+    position: absolute;
+    left: 1em;
+    top: 1em;
+    padding: 1em;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: xx-small;
+  }
+  .info::after{
+    content: '';
+    position: absolute;
+    border: 10px solid transparent;
+    border-top: 10px solid rgba(0, 0, 0, 0.7);
+    top: 0;
+    left: -10px;
+  } */
+</style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://fake-vs-real-stereo.glitch.me/ocean.js"></script>
+    <script src="CubemapToEquirectangular.js"></script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="capture" >Capture</div>
+
+  <script>
+    let equi, cubeCamera, cubeRenderTarget;
+
+    function main() {
+
+      const canvas = document.querySelector('#c');
+      const renderer = new THREE.WebGLRenderer({canvas});
+      
+      // const points = [
+      //    [170, 20],
+      //    [400, 50],
+      //    [225, 120],
+      // ].map((point) => {
+      //   const infoElem = document.createElement('pre');
+      //   document.body.appendChild(infoElem);
+      //   infoElem.className = "info";
+      //   infoElem.style.left = `${point[0] + 10}px`;
+      //   infoElem.style.top = `${point[1]}px`;
+      //   return {
+      //     point,
+      //     infoElem,
+      //   };
+      // });
+      
+      const renderTarget = new THREE.WebGLRenderTarget(1, 1);
+      renderTarget.depthTexture = new THREE.DepthTexture();
+      const depthRenderTarget = new THREE.WebGLRenderTarget(1, 1, {
+        depthBuffer: false,
+        stenciBuffer: false,
+      });
+
+      // var options = { format: THREE.RGBAFormat, magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter };
+      // var cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 2048, options );
+			// equi = new CubemapToEquirectangular( renderer, false );
+			// cubeCamera = new THREE.CubeCamera( .1, 1000, cubeRenderTarget );
+      equi = new CubemapToEquirectangular( renderer, true );
+
+      const rtFov = 60;
+      const rtAspect = 1;
+      const rtNear = 0.1;
+      const rtFar = 200;
+      const rtCamera = new THREE.PerspectiveCamera(rtFov, rtAspect, rtNear, rtFar);
+      rtCamera.position.z = 30;
+    
+      const rtScene = new THREE.Scene();
+      rtScene.background = new THREE.Color('white');
+    
+      // put the camera on a pole (parent it to an object)
+      // so we can spin the pole to move the camera around the scene
+      const cameraPole = new THREE.Object3D();
+      rtScene.add(cameraPole);
+      cameraPole.add(rtCamera);
+    
+      {
+        const color = 0xFFFFFF;
+        const intensity = 1;
+        const light = new THREE.DirectionalLight(color, intensity);
+        light.position.set(-1, 2, 4);
+        rtCamera.add(light);
+      }
+    
+      const boxWidth = 1;
+      const boxHeight = 1;
+      const boxDepth = 1;
+      const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+    
+      function rand(min, max) {
+        if (max === undefined) {
+          max = min;
+          min = 0;
+        }
+        return min + (max - min) * Math.random();
+      }
+    
+      function randomColor() {
+        return `hsl(${rand(360) | 0}, ${rand(50, 100) | 0}%, 50%)`;
+      }
+    
+      const numObjects = 100;
+      for (let i = 0; i < numObjects; ++i) {
+        const material = new THREE.MeshPhongMaterial({
+          color: randomColor(),
+        });
+    
+        const cube = new THREE.Mesh(geometry, material);
+        rtScene.add(cube);
+    
+        cube.position.set(rand(-20, 20), rand(-20, 20), rand(-20, 20));
+        cube.rotation.set(rand(Math.PI), rand(Math.PI), 0);
+        cube.scale.set(rand(3, 6), rand(3, 6), rand(3, 6));
+      }
+    
+    
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+      const scene = new THREE.Scene();
+      camera.position.z = 1;
+    
+      const sceneMaterial = new THREE.MeshBasicMaterial({
+        map: renderTarget.texture,
+      });
+      const planeGeo = new THREE.PlaneBufferGeometry(2, 2);
+      const plane = new THREE.Mesh(planeGeo, sceneMaterial);
+      scene.add(plane);
+      
+      const depthScene = new THREE.Scene();
+      const depthMaterial = new THREE.MeshBasicMaterial({
+        map: renderTarget.depthTexture,
+      });
+      depthMaterial.onBeforeCompile = function(shader) {
+        // the <packing> GLSL chunk from three.js has the packDeathToRGBA function.
+        // then at the end of the shader the default MaterialBasicShader has
+        // already read from the material's `map` texture (the depthTexture)
+        // which has depth in 'r' and assigned it to gl_FragColor
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <common>',
+            '#include <common>\n#include <packing>',
+        ).replace(
+            '#include <fog_fragment>',
+            'gl_FragColor = packDepthToRGBA( gl_FragColor.r );',
+        );
+      };  
+    
+      const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
+      depthScene.add(depthPlane);
+    
+      function resizeRendererToDisplaySize(renderer) {
+        const canvas = renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+          renderer.setSize(width, height, false);
+        }
+        return needResize;
+      }
+    
+      let depthValues = new Uint8Array(0);
+      function render(time) {
+        time *= 0.001;
+    
+        if (resizeRendererToDisplaySize(renderer)) {
+          const canvas = renderer.domElement;
+          renderTarget.setSize(canvas.width, canvas.height);
+          depthRenderTarget.setSize(canvas.width, canvas.height);
+          rtCamera.aspect = canvas.clientWidth / canvas.clientHeight;
+          rtCamera.updateProjectionMatrix();
+        }
+    
+        cameraPole.rotation.y = time * .1;
+    
+        // draw render target scene to render target
+        renderer.setRenderTarget(renderTarget);
+        renderer.render(rtScene, rtCamera);
+        renderer.setRenderTarget(null);
+        
+        // render the depth texture to another render target
+        renderer.setRenderTarget(depthRenderTarget);
+        renderer.render(depthScene, camera);
+        renderer.setRenderTarget(null);
+    
+        {
+          const {width, height} = depthRenderTarget;
+          const spaceNeeded = width * height * 4;
+          if (depthValues.length !== spaceNeeded) {
+            depthValues = new Uint8Array(spaceNeeded);
+          }
+          renderer.readRenderTargetPixels(
+              depthRenderTarget,
+              0,
+              0,
+              depthRenderTarget.width,
+              depthRenderTarget.height,
+              depthValues);
+              
+    //       for (const {point, infoElem} of points) {
+    //          const offset = ((height - point[1] - 1) * width + point[0]) * 4;
+    //          const depth = depthValues[offset    ] * ((255 / 256) / (256 * 256 * 256)) +
+    //                        depthValues[offset + 1] * ((255 / 256) / (256 * 256)) +
+    //                        depthValues[offset + 2] * ((255 / 256) / 256);
+    
+             
+    //          infoElem.textContent = `position : ${point[0]}, ${point[1]}
+    // z depth  : ${depth.toFixed(3)}`;
+    //       }    
+        }
+        
+        // render the color texture to the canvas
+        renderer.render(depthScene, camera);
+    
+        requestAnimationFrame(render);
+      }
+    
+      requestAnimationFrame(render);
+
+      document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
+          // cubeCamera.position.copy( camera.position );
+          // cubeCamera.update( renderer, scene );
+          // equi.convert( cubeCamera );
+          equi.update( camera, depthScene );
+      });
+    }
+    
+    main();
+    </script>
+</body>
+
+</html>
