@@ -54,7 +54,7 @@ body {
       const invisibleCubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
       const invisibleCubeCamera = new THREE.CubeCamera(invisibleNear, invisibleFar, invisibleCubeRenderTarget)
       let invisibleCamera = invisibleCubeCamera.children[5];
-      invisibleCamera.position.z = 1;
+      invisibleCubeCamera.position.z = 1;
     
       const invisibleScene = new THREE.Scene();
       invisibleScene.background = new THREE.Color('white');
@@ -112,7 +112,6 @@ body {
     
       const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
       const cubeCamera = new THREE.CubeOrthographicCamera(-1, 1, 1, -1, -1, 1, cubeRenderTarget);
-      let renderedCubeCameraIndex = 6; // Pick initial camera to render to canvas
       const equi = new CubemapToEquirectangular( renderer, false ); // Setup cubemap to equirectangular conversion
 
       const planeGeo = new THREE.PlaneBufferGeometry(2, 2);      
@@ -170,7 +169,7 @@ body {
         renderer.setRenderTarget(null);
         
         // render the depth texture to the canvas
-        let cubeFaceCamera = cubeCamera.children[renderedCubeCameraIndex];
+        let cubeFaceCamera = cubeCamera.children[6];
         renderer.render(depthScene, cubeFaceCamera);
     
         requestAnimationFrame(render);
@@ -200,7 +199,8 @@ body {
 
       document.addEventListener('keydown', function(e) {
         if (e.keyCode >= 49 && e.keyCode < 55) {
-          renderedCubeCameraIndex = e.keyCode - 49;
+          const invisibleCameraIndex = e.keyCode - 49;
+          invisibleCamera = invisibleCubeCamera.children[invisibleCameraIndex];
         }
       });
     }
