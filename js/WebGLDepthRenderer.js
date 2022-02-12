@@ -30,35 +30,37 @@ class WebGLDepthRenderer extends THREE.WebGLRenderer {
         // Create a flat "TV screen" scene, to render the depth texture to.
         this.depthScene = new THREE.Scene();
         const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
-        this.depthScene.position.set(0, 0, -1); // TODO: wut
+        depthPlane.position.set(0, 0, -1); // TODO: wut
         this.depthScene.add(depthPlane);
 
         // Create an orthographic camera for the flat "TV screen" scene.
         this.depthCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
 
-        this.parentRender = this.render; // instance method not available in prototype
-        this.render = function (scene, camera) {
+        this._render = this.render;  // instance method not available in prototype
+        this.render = function(scene, camera) {
             // Get original render target
             var renderTarget = this.getRenderTarget();
+            var activeCubeFace = this.getActiveCubeFace();
 
             // Draw scene into invisible render target.
             this.setRenderTarget(this.invisibleRenderTarget);
-            this.parentRender(scene, camera);
+            this._render(scene, camera);
             this.setRenderTarget(null);
+            
+            // Restore original render target
+            this.setRenderTarget(renderTarget, activeCubeFace);
 
             // Render depth texture to the provided target.
-            this.setRenderTarget(renderTarget);
-            this.parentRender(this.depthScene, this.depthCamera);
+            this._render(this.depthScene, this.depthCamera);
         };
 
-        this.parentSetSize = this.setSize; // instance method not available in prototype
+        const setSize = this.setSize.bind(this); // instance method not available in prototype
         this.setSize = function (width, height, updateStyle) {
-            this.parentSetSize(width, height, updateStyle);
+            setSize(width, height, updateStyle);
             // TODO: should this be canvas.width and canvas.height?
             this.invisibleRenderTarget.setSize(width, height);
         };
     }
 }
-
 
 THREE.WebGLDepthRenderer = WebGLDepthRenderer;
