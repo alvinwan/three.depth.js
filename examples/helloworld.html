@@ -10,7 +10,7 @@
 -->
 <html>
   <head>
-    <title>Preview 2d Depth Map</title>
+    <title>threeJS.depth - "Hello World" Example</title>
     <link href="../css/basic.css" rel="stylesheet">
     <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
     <script src="../js/WebGLDepthExporter.js"></script>
@@ -27,35 +27,22 @@
     <script>
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('canvas');
-      const renderer = new THREE.WebGLRenderer({canvas});
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
       setupTorusKnotScene();
+
+      // Initialize renderer
+      const renderer = new THREE.WebGLRenderer({canvas});
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
       // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
-      function render() {
-        // 2. Render depth to the canvas
-        depthExporter.setRenderTarget(null);
-        depthExporter.render(scene, camera);
+      // 2. Update the depth exporter size
+      depthExporter.setSize(canvas.width, canvas.height);
 
-        // Rotate camera
-        camera.rotation.y += 0.01;
-        requestAnimationFrame(render);
-      }
-      requestAnimationFrame(render);
-
-      // Resize when window size changes
-      function onWindowResize() {
-        onWindowResizeRenderer(renderer);
-        
-        // 3. Update depth exporter size when window size changes
-        let canvas = renderer.domElement;
-        depthExporter.setSize(canvas.width, canvas.height);
-      }
-
-      onWindowResize();
-      window.addEventListener('resize', onWindowResize);
+      // 3. Render depth to the canvas
+      depthExporter.setRenderTarget(null);
+      depthExporter.render(scene, camera);
     </script>
   </body>
 </html>

@@ -63,12 +63,9 @@
         }
       });
 
-      // Resize when window size changes
       function onWindowResize() {
-        onWindowResizeRenderer(renderer);
-        
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
         // 3. Update depth exporter size when window size changes
-        let canvas = renderer.domElement;
         depthExporter.setSize(canvas.width, canvas.height);
       }
 
