@@ -28,20 +28,32 @@
     <script>
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('canvas');
-      const renderer = new THREE.WebGLRenderer({canvas});
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 10);
       const scene = setupTorusKnotScene();
+
+      // Initialize renderer
+      const renderer = new THREE.WebGLRenderer({canvas});
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
       // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
-      // Support for some user interaction
-      let renderMode = 1; // Toggle color: 0 - depth, 1 - color
-    
+      // 2. Update the depth exporter size
+      depthExporter.setSize(canvas.width, canvas.height);
+
+      // 3. Render depth to canvas
+      depthExporter.setRenderTarget(null);
+      depthExporter.render(scene, camera);
+
+      /**
+       * Extras
+       */
+
+      // Spin the scene around
       function render() {
 
         if (renderMode == 0) {
-          // 2. Render depth to the canvas
+          // Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, camera);
         } else {
@@ -56,21 +68,14 @@
       }
       requestAnimationFrame(render);
 
-      // Update render mode when key is pressed
+      let renderMode = 0; // toggle color (0 - depth, 1 - color)
       document.addEventListener('keydown', function(e) {
+
+        // Press `c` to toggle color on/off.
         if (e.key == 'c') {
           renderMode = (renderMode + 1) % 2;
         }
       });
-
-      function onWindowResize() {
-        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-        // 3. Update depth exporter size when window size changes
-        depthExporter.setSize(canvas.width, canvas.height);
-      }
-
-      onWindowResize();
-      window.addEventListener('resize', onWindowResize);
     </script>
   </body>
 </html>

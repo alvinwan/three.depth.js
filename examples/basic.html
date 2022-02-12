@@ -44,7 +44,11 @@
       depthExporter.setRenderTarget(null);
       depthExporter.render(scene, camera);
 
-      // Support some user interaction. Press `c` to toggle color on/off.
+      /**
+       * Extras
+       */
+
+      // Press `c` to toggle color on/off.
       let renderMode = 0;
       document.addEventListener('keydown', function(e) {
         if (e.key == 'c') {
@@ -60,7 +64,7 @@
           renderer.setRenderTarget(null);
           renderer.render(scene, camera);
         }
-      })
+      });
     </script>
   </body>
 </html>

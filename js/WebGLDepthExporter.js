@@ -22,12 +22,12 @@ class WebGLDepthExporter {
         const planeGeo = new THREE.PlaneBufferGeometry(2, 2);
 
         // Initialize depth material to use the depth texture as a color texture.
-        this.depthMaterial = this._getDepthMaterial(packing);
+        const depthMaterial = this._getDepthMaterial(this.packing);
 
         // Create a flat "TV screen" scene, to render the depth texture to.
         this.depthScene = new THREE.Scene();
-        const depthPlane = new THREE.Mesh(planeGeo, this.depthMaterial);
-        depthPlane.position.set(0, 0, -1); // TODO: wut
+        const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
+        depthPlane.position.set(0, 0, -1);
         this.depthScene.add(depthPlane);
 
         // Create an orthographic camera for the flat "TV screen" scene.
