@@ -31,8 +31,6 @@ body {
   <div id="capture" >Capture</div>
 
   <script>
-    let equi, cubeCamera, cubeRenderTarget;
-
     function main() {
 
       const canvas = document.querySelector('#c');
@@ -49,22 +47,14 @@ body {
         stenciBuffer: false,
       });
 
-      // var options = { format: THREE.RGBAFormat, magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter };
-      // var cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 2048, options );
-			// equi = new CubemapToEquirectangular( renderer, false );
-			// cubeCamera = new THREE.CubeCamera( .1, 1000, cubeRenderTarget );
-      equi = new CubemapToEquirectangular( renderer, true );
-
       const invisibleFov = 90;
       const invisibleAspect = 1;
       const invisibleNear = 0.1;
       const invisibleFar = 100;
-      // const invisibleCamera = new THREE.PerspectiveCamera(invisibleFov, invisibleAspect, invisibleNear, invisibleFar);
       const invisibleCubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
-      // cubeRenderTarget.depthTexture = new THREE.DepthTexture();
       const invisibleCubeCamera = new THREE.CubeCamera(invisibleNear, invisibleFar, invisibleCubeRenderTarget)
       let invisibleCamera = invisibleCubeCamera.children[5];
-      invisibleCamera.position.z = 5;
+      invisibleCamera.position.z = 1;
     
       const invisibleScene = new THREE.Scene();
       invisibleScene.background = new THREE.Color('white');
@@ -122,19 +112,10 @@ body {
     
       const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
       const cubeCamera = new THREE.CubeOrthographicCamera(-1, 1, 1, -1, -1, 1, cubeRenderTarget);
-      const camera = cubeCamera.children[6];
-      // const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
-      camera.position.z = 1;
-      const scene = new THREE.Scene();
-    
-      const sceneMaterial = new THREE.MeshBasicMaterial({
-        map: renderTarget.texture,
-      });
-      const planeGeo = new THREE.PlaneBufferGeometry(2, 2);
-      const plane = new THREE.Mesh(planeGeo, sceneMaterial);
-      scene.add(plane);
-      
-      const depthScene = new THREE.Scene();
+      let renderedCubeCameraIndex = 6; // Pick initial camera to render to canvas
+      const equi = new CubemapToEquirectangular( renderer, false ); // Setup cubemap to equirectangular conversion
+
+      const planeGeo = new THREE.PlaneBufferGeometry(2, 2);      
       const depthMaterial = new THREE.MeshBasicMaterial({
         map: renderTarget.depthTexture,
       });
@@ -152,7 +133,9 @@ body {
         );
       };  
     
+      const depthScene = new THREE.Scene();
       const depthPlane = new THREE.Mesh(planeGeo, depthMaterial);
+      depthScene.position.set(0, 0, -1);
       depthScene.add(depthPlane);
     
       function resizeRendererToDisplaySize(renderer) {
@@ -185,16 +168,10 @@ body {
         renderer.clearDepth();
         renderer.render(invisibleScene, invisibleCamera);
         renderer.setRenderTarget(null);
-        // cubeCamera.update(renderer, invisibleScene);
-
-        // render the depth texture to another render target
-        renderer.setRenderTarget(depthRenderTarget);
-        renderer.clearColor();
-        renderer.render(depthScene, camera);
-        renderer.setRenderTarget(null);
         
         // render the depth texture to the canvas
-        renderer.render(depthScene, camera);
+        let cubeFaceCamera = cubeCamera.children[renderedCubeCameraIndex];
+        renderer.render(depthScene, cubeFaceCamera);
     
         requestAnimationFrame(render);
       }
@@ -202,17 +179,28 @@ body {
       requestAnimationFrame(render);
 
       document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
+
+          // // render the depth texture to another render target
+          // let cubeFaceCamera = cubeCamera.children[renderedCubeCameraIndex];
+          // renderer.setRenderTarget(depthRenderTarget);
+          // renderer.clearColor();
+          // renderer.render(depthScene, cubeFaceCamera);
+          // renderer.setRenderTarget(null);
+
           // cubeCamera.position.copy( camera.position );
-          // cubeCamera.update( renderer, scene );
-          // equi.convert( cubeCamera );
-          equi.update( camera, depthScene );
+          cubeCamera.update( renderer, depthScene );
+
+          // Unmanaged conversion. Do not use managed version since it will attempt a 
+          // re-render. We previously, manually rendered every cube face ourselves already.
+          // This manual rendering, face by face, to save the depth values, is necessary,
+          // since the cube render target doesnt support depth textures.
+          equi.convert( cubeCamera );
+          // equi.update( cubeCamera, depthScene ); // managed
       });
 
       document.addEventListener('keydown', function(e) {
-        if (e.keyCode >= 48 && e.keyCode < 54) {
-          index = e.keyCode - 48;
-          invisibleCamera = invisibleCubeCamera.children[index];
-          invisibleCamera.position.z = 5;
+        if (e.keyCode >= 49 && e.keyCode < 55) {
+          renderedCubeCameraIndex = e.keyCode - 49;
         }
       });
     }
