@@ -41,14 +41,16 @@
       requestAnimationFrame(render);
 
       // Resize when window size changes
-      onWindowResize(renderer, depthExporter);
-      window.addEventListener('resize', () => {
-        onWindowResize(renderer);
+      function onWindowResize() {
+        onWindowResizeRenderer(renderer);
         
         // 3. Update depth exporter size when window size changes
         let canvas = renderer.domElement;
         depthExporter.setSize(canvas.width, canvas.height);
-      });
+      }
+
+      onWindowResize();
+      window.addEventListener('resize', onWindowResize);
     </script>
   </body>
 </html>

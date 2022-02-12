@@ -1,9 +1,18 @@
+<!--
+
+  "Export Rectilinear Depth Maps" Example
+
+  Follow the 3 steps below to export depth maps from a scene:
+    1. Initialize the depth exporter
+    2. Render the scene using the depth exporter
+    3. Resize depth exporter when window size changes
+
+-->
 <html>
   <head>
-    <title>Preview 2d Depth Map</title>
+    <title>Export Rectilinear Depth Maps</title>
     <link href="../css/basic.css" rel="stylesheet">
     <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.125.1/examples/js/controls/OrbitControls.js"></script>
     <script src="../js/WebGLDepthExporter.js"></script>
     <script src="../js/demo.js"></script>
   </head> 
@@ -17,18 +26,16 @@
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       setupTorusKnotScene();
 
-      // Initialize depth exporter
+      // 1. Initialize depth exporter
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
       // Support for some user interaction
-      const controls = new THREE.OrbitControls( camera, renderer.domElement );
-      controls.enableDamping = true; // allow user to drag smoothly
       let renderMode = 1; // 1 = render depth and 2 = render rgb
     
       function render() {
 
         if (renderMode == 1) {
-          // Render depth to the canvas
+          // 2. Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, camera);
         } else {
@@ -37,23 +44,30 @@
           renderer.render(scene, camera);
         }
 
-        // resize if need be
-        if (resizeRendererToDisplaySize(renderer)) {
-          const canvas = renderer.domElement;
-          depthExporter.setSize(canvas.width, canvas.height);
-        }
-
-        controls.update(); // needed since damping enabled
-    
+        // Rotate camera
+        camera.rotation.y += 0.01;
         requestAnimationFrame(render);
       }
-      render();
+      requestAnimationFrame(render);
 
+      // Update render mode when key is pressed
       document.addEventListener('keydown', function(e) {
         if (e.key == 1 || e.key == 2) {
           renderMode = e.key;
         }
       });
+
+      // Resize when window size changes
+      function onWindowResize() {
+        onWindowResizeRenderer(renderer);
+        
+        // 3. Update depth exporter size when window size changes
+        let canvas = renderer.domElement;
+        depthExporter.setSize(canvas.width, canvas.height);
+      }
+
+      onWindowResize();
+      window.addEventListener('resize', onWindowResize);
     </script>
   </body>
 </html>
