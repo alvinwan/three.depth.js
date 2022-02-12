@@ -41,12 +41,14 @@
 
         // Initialize depth exporters
         const depthExporter = new THREE.WebGLDepthExporter(renderer);
-        const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
+        const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {
+          maxPrecision: true
+        });
 
         // Use a cube camera so that we don't need to manually initialize the 6 
         // perspective cameras needed for a cubemap.
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-        const cubeCamera = new THREE.CubeCamera(0.1, 100, cubeRenderTarget);
+        const cubeCamera = new THREE.CubeCamera(0.1, 30, cubeRenderTarget);
         let canvasCameraIndex = 5; // chose which cube face to render
       
         // Setup and animate the scene
