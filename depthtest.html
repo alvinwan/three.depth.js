@@ -36,29 +36,23 @@ body {
 
       const canvas = document.querySelector('#c');
       const renderer = new THREE.WebGLRenderer({canvas});
+
+      // Initialize depth exporters
       const depthExporter = new THREE.WebGLDepthExporter(renderer);
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
 
-      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024, {
-        depthBuffer: false,
-        stenciBuffer: false,
-      });
+      // Initialize render target. 
+      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
 
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
-      const invisibleFov = 90;
-      const invisibleAspect = 1;
-      const invisibleNear = 0.1;
-      const invisibleFar = 100;
-      const invisibleCubeCamera = new THREE.CubeCamera(invisibleNear, invisibleFar, notUsedCubeRenderTarget)
+      const cubeCamera = new THREE.CubeCamera(0.1, 100, cubeRenderTarget);
 
       // Choose the camera we'll by default render to the canvas.
       let canvasCameraIndex = 5;
 
       // Setup the scene that we'll use to render the depth values to a texture.
-      const scenePackage = setupScene(invisibleCubeCamera);
-      const invisibleScene = scenePackage.scene;
-      const cameraPole = scenePackage.cameraPole;
+      const {scene, cameraPole} = setupScene(cubeCamera);
     
       // Animate the scene: rotate the camera around, render the depth at each
       // frame.
@@ -67,9 +61,8 @@ body {
     
         if (resizeRendererToDisplaySize(renderer)) {
           const canvas = renderer.domElement;
-          // TODO: this causes the depth texture to be blank - all black?
-          // cubeRenderTarget.setSize(canvas.width, canvas.height);
-          setCubeCameraAspect(invisibleCubeCamera, canvas.clientWidth / canvas.clientHeight);
+          // cubeRenderTarget.setSize(canvas.width, canvas.height); // TODO: why makes erp blank?
+          setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
           depthExporter.setSize(canvas.width, canvas.height);
           cubeDepthExporter.setSize(canvas.width, canvas.height);
         }
@@ -77,7 +70,7 @@ body {
         cameraPole.rotation.y = time * .1;
 
         depthExporter.setRenderTarget(null);
-        depthExporter.render(invisibleScene, invisibleCubeCamera.children[5]);
+        depthExporter.render(scene, cubeCamera.children[canvasCameraIndex]);
     
         requestAnimationFrame(render);
       }
@@ -92,17 +85,21 @@ body {
 
       document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
           // Reset aspect ratio to 1. No idea why this is needed, but it is.
-          setCubeCameraAspect(invisibleCubeCamera, 1);
+          var ratio = getCubeCameraAspectRatio(cubeCamera);
+          setCubeCameraAspectRatio(cubeCamera, 1);
 
           cubeDepthExporter.setRenderTarget(cubeRenderTarget);
-          cubeDepthExporter.render(invisibleScene, invisibleCubeCamera);
+          cubeDepthExporter.render(scene, cubeCamera);
           cubeDepthExporter.setRenderTarget(null);
 
           // Unmanaged conversion. Do not use managed version since it will attempt 
           // a re-render. We previously manually rendered every cube face ourselves
           // already. This manual rendering, face by face, to save the depth values,
           // is necessary, since the *cube render target doesnt support depth textures.
-          equi.convert( invisibleCubeCamera );
+          equi.convert( cubeCamera );
+
+          // Restore aspect ratio
+          setCubeCameraAspectRatio(cubeCamera, ratio);
       });
 
       document.addEventListener('keydown', function(e) {
@@ -115,7 +112,11 @@ body {
        * Utilities
        */
 
-      function setCubeCameraAspect(cubeCamera, aspect) {
+      function getCubeCameraAspectRatio(cubeCamera) {
+        return cubeCamera.children[0].aspect;
+      }
+
+      function setCubeCameraAspectRatio(cubeCamera, aspect) {
         for (let camera of cubeCamera.children) {
           camera.aspect = aspect;
           camera.updateProjectionMatrix();
