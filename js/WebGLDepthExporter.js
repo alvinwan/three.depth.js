@@ -23,7 +23,7 @@ class WebGLDepthExporter {
         // Initialize a standard render target that can store depth textures for
         // usage later on.
         this.invisibleRenderTarget = new THREE.WebGLRenderTarget(1, 1);
-        this.invisibleRenderTarget.depthTexture = new threejs.depthTexture();
+        this.invisibleRenderTarget.depthTexture = new THREE.DepthTexture();
 
         // Initialize the flat "TV screen" planes, which will hold the depth values 
         // as a color texture.
