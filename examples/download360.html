@@ -33,14 +33,16 @@
 
       // 1. Initialize depth exporter
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
+
+      // 2. Update the depth exporter size
       cubeDepthExporter.setSize(canvas.width, canvas.height);
 
-      // 2. Render depth in all directions to a cubemap
+      // 3. Render depth in all directions to a cubemap
       cubeDepthExporter.setRenderTarget(cubeRenderTarget);
       cubeDepthExporter.render(scene, cubeCamera);
       cubeDepthExporter.setRenderTarget(null);
 
-      // 3. Run cubemap to equirectangular conversion
+      // 4. Run cubemap to equirectangular conversion
       const equi = new CubemapToEquirectangular( renderer, false );
       // equi.convert( cubeCamera ); // Uncomment to download on page load.
 
