@@ -1,6 +1,10 @@
 # Three.js Depth
 
-Makes depth map export from threeJS simple, using just a few lines of code. Includes examples for downloading depth maps, supporting equirectangular 360 depth maps, and integrating with AFrame.
+Makes depth map export from three.js simple, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
+
+- downloading depth maps
+- exporting 360 depth maps in equirectangular format
+- integrating with AFrame.
 
 ![threejs.depth preview](https://user-images.githubusercontent.com/2068077/153713671-65a207a5-2e73-4db2-b7dd-d6f1a9c15093.jpg)
 
@@ -27,9 +31,12 @@ const depthExporter = new THREE.WebGLDepthExporter(renderer);
 // 2. Update the depth exporter size on init
 depthExporter.setSize(canvas.width, canvas.height);
 
-// 3. Render the depth map
+// 3. Render the depth map to canvas
 depthExporter.setRenderTarget(null);
 depthExporter.render(scene, camera);
+
+// optionally, download the depth map
+depthExporter.download(scene, camera);
 ```
 
 See these examples for working demos and annotated source code:
