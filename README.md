@@ -1,10 +1,10 @@
 # Three.js Depth
 
-Makes depth map export from three.js simple, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
+Easily export depth maps from a three.js scene, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
 
 - downloading depth maps
 - exporting 360 depth maps in equirectangular format
-- integrating with AFrame.
+- integrating with AFrame
 
 ![threejs.depth preview](https://user-images.githubusercontent.com/2068077/153713671-65a207a5-2e73-4db2-b7dd-d6f1a9c15093.jpg)
 
