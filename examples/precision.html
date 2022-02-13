@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Preview 2d Depth Map</title>
+    <title>threejs.depth - Higher-Precision Depth Maps using RGB Packing</title>
     <link href="../css/basic.css" rel="stylesheet">
     <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
     <script src="../js/WebGLDepthExporter.js"></script>
@@ -8,8 +8,8 @@
   </head> 
   <body>
     <div id="info">
-			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Higher precision depth packing in RGB color channels<br/>
+			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> - more precise depth<br/>
+			Depth packing for precision. Toggle color (c) or rotation (space). Download depth (d).<br/>
 			Created by <a href="http://twitter.com/lvinwan" target="_blank" rel="noopener">@lvinwan</a>.
 		</div>
 
@@ -73,7 +73,7 @@
           rotationSpeed = 0.01 * !rotationSpeed;
         } else if (e.key == 'd') {
           // Press `d` to download the image.
-          depthExporter.download();
+          depthExporter.download(scene, camera);
         }
       });
     </script>
