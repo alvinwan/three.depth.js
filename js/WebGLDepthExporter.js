@@ -160,8 +160,9 @@ class Downloader {
         this.canvas = document.createElement( 'canvas' );
 	    this.ctx = this.canvas.getContext( '2d' );
 
-        const {width, height} = this.renderer.getSize();
-        this.setSize(width, height);
+        let size = new THREE.Vector2();
+        this.renderer.getSize(size);
+        this.setSize(size.x, size.y);
     }
 
     setSize(width, height) {
