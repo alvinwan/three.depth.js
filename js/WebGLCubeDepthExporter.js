@@ -1,4 +1,4 @@
-class WebGLCubeDepthExporter extends WebGLDepthExporter {
+class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
     render(scene, cubeCamera) {
         // Get original render target
         var renderTarget = this.renderer.getRenderTarget();
@@ -21,6 +21,15 @@ class WebGLCubeDepthExporter extends WebGLDepthExporter {
 
         // Restore original render target
         this.renderer.setRenderTarget(renderTarget, activeCubeFace);
+    }
+
+    toImage() {
+        console.warn(
+            'WebGLCubeDepthExporter.toImage() by default only exports ' +
+            'the last face of the cube. Instead, use Downloader.renderTargetDepthToImage()' +
+            'on the cube render target.'
+        );
+        return super.toImage();
     }
 }
 

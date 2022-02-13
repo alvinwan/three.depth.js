@@ -58,3 +58,14 @@ canvas {
 	margin-top: 20px;
 	padding: 10px;
 }
+
+#capture{
+	position: absolute;
+	left: 20px;
+	top: 20px;
+	padding: 10px;
+	border: 1px solid white;
+	z-index: 100;
+	cursor: pointer;
+	background-color: rgba( 0,0,0,.4);
+}

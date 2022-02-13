@@ -9,8 +9,16 @@ class WebGLDepthExporter {
     constructor(renderer, {
         packing = THREE.BasicDepthPacking,
     } = {}) {
+        this.downloader = new Downloader(renderer);
         this.renderer = renderer;
         this.packing = packing;
+
+        // Initialize a render target for image export. Doesnt need a depth or 
+        // stencil buffer, since we just need its color texture.
+        this.imageRenderTarget = new THREE.WebGLRenderTarget(1, 1, {
+            depthBuffer: false,
+            stencilBuffer: false,
+        })
 
         // Initialize a standard render target that can store depth textures for
         // usage later on.
@@ -39,17 +47,12 @@ class WebGLDepthExporter {
     }
 
     render(scene, camera) {
-        // Get original render target
-        var renderTarget = this.renderer.getRenderTarget();
-        var activeCubeFace = this.renderer.getActiveCubeFace();
-
-        // Draw scene into invisible render target.
-        this.renderer.setRenderTarget(this.invisibleRenderTarget);
-        this.renderer.render(scene, camera);
-        this.renderer.setRenderTarget(null);
-        
-        // Restore original render target
-        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
+        this._isolatedRenderTargetContext(function() {
+            // Draw scene into invisible render target.
+            this.renderer.setRenderTarget(this.invisibleRenderTarget);
+            this.renderer.render(scene, camera);
+            this.renderer.setRenderTarget(null);
+        });
 
         // Render depth texture to the provided target.
         this.renderer.render(this.depthScene, this.depthCamera);
@@ -57,6 +60,53 @@ class WebGLDepthExporter {
 
     setSize(width, height) {
         this.invisibleRenderTarget.setSize(width, height);
+        this.imageRenderTarget.setSize(width, height);
+        this.downloader.setSize(width, height);
+    }
+
+    /**
+     * Export the last-rendered depth texture to an image.
+     */
+    toImage() {
+        this._isolatedRenderTargetContext(function() {
+            this.setRenderTarget(this.imageRenderTarget);
+            this.render(this.depthScene, this.depthCamera);
+            this.setRenderTarget(null);
+        });
+        return this.downloader.renderTargetToImage(this.imageRenderTarget);
+    }
+
+    /**
+     * Download a depth map for the provided scene and camera.
+     */
+    download(scene, camera) {
+        this.render(scene, camera);
+        this._downloadLastRender();
+    }
+
+    /**
+     * Download the last-rendered depth texture as an image. This is not the 
+     * default, because it's too easy to forget to render the depth before
+     * using this method directly.
+     */
+    _downloadLastRender() {
+        const image = this.toImage();
+        this.downloader.download(image);
+    }
+
+    /**
+     * Run a function in a new isolated render target context. This ensures that 
+     * the original render target is restored after the function is run. 
+     */
+    _isolatedRenderTargetContext(handler) {
+        // Get original render target
+        var renderTarget = this.renderer.getRenderTarget();
+        var activeCubeFace = this.renderer.getActiveCubeFace();
+
+        handler.bind(this)();
+
+        // Restore original render target
+        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
     }
 
     /**
@@ -100,6 +150,59 @@ class WebGLDepthExporter {
 class WebGLDepthExporterShaders {
     static fragmentShaderLineRGB = 'gl_FragColor = packDepthToRGBA( gl_FragColor.r );';
     static fragmentShaderLineBasic = 'gl_FragColor.rgb = (1.0 - vec3( gl_FragColor.r )) * 255.0;\ngl_FragColor.a = 1.0;';
+}
+
+class Downloader {
+    constructor(renderer) {
+        this.renderer = renderer;
+
+        // Initialize canvas for blob conversion
+        this.canvas = document.createElement( 'canvas' );
+	    this.ctx = this.canvas.getContext( '2d' );
+
+        const {width, height} = this.renderer.getSize();
+        this.setSize(width, height);
+    }
+
+    setSize(width, height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.width = width;
+        this.height = height;
+    }
+
+    download(image) {
+        this.ctx.putImageData( image, 0, 0 );
+
+        this.canvas.toBlob( function( blob ) {
+
+            var url = URL.createObjectURL(blob);
+            var fileName = 'image-' + document.title + '-' + Date.now() + '.png';
+            var anchor = document.createElement( 'a' );
+            anchor.href = url;
+            anchor.setAttribute("download", fileName);
+            anchor.className = "download-js-link";
+            anchor.innerHTML = "downloading...";
+            anchor.style.display = "none";
+            document.body.appendChild(anchor);
+            setTimeout(function() {
+                anchor.click();
+                document.body.removeChild(anchor);
+            }, 1 );
+
+        }, 'image/png' );
+    }
+
+    renderTargetToImage(renderTarget) {
+        // Write render target depth to pixel array
+        const pixels = new Uint8Array( 4 * this.width * this.height );
+        this.renderer.readRenderTargetPixels(renderTarget, 0, 0, this.width, this.height, pixels);
+
+        // Create image from pixel array
+        const image = new ImageData( new Uint8ClampedArray( pixels ), this.width, this.height );
+
+        return image;
+    }
 }
 
 THREE.WebGLDepthExporter = WebGLDepthExporter;

@@ -1,6 +1,6 @@
 <!--
 
-  "Export Rectilinear Depth Maps" Example
+  "Download Rectilinear Depth Maps" Example
 
   Follow the 3 steps below to export depth maps from a scene:
     1. Initialize the depth exporter
@@ -10,7 +10,7 @@
 -->
 <html>
   <head>
-    <title>Export Rectilinear Depth Maps</title>
+    <title>Download Rectilinear Depth Maps</title>
     <link href="../css/basic.css" rel="stylesheet">
     <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
     <script src="../js/WebGLDepthExporter.js"></script>
@@ -18,10 +18,11 @@
   </head> 
   <body>
     <canvas></canvas>
+    <div id="capture">Capture</div>
 
     <div id="info">
-			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Exports depth map. Toggle color on/off (c).<br/>
+			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - download depth<br/>
+			Toggle color on/off (c). Start/stop rotation (space). Download depth (d)<br/>
       Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
 		</div>
 
@@ -45,9 +46,16 @@
       depthExporter.setRenderTarget(null);
       depthExporter.render(scene, camera);
 
+      // 4. Download as image - Uncomment to download on page load.
+      // depthExporter.download();  // must be called after render
+
       /**
        * Extras
        */
+
+      // User interactions state
+      let rotationSpeed = 0.01;
+      let renderMode = 1; // toggle color (0 - depth, 1 - color)
 
       // Spin the scene around
       function render() {
@@ -63,17 +71,21 @@
         }
 
         // Rotate camera
-        camera.rotation.y += 0.01;
+        camera.rotation.y += rotationSpeed;
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
 
-      let renderMode = 0; // toggle color (0 - depth, 1 - color)
       document.addEventListener('keydown', function(e) {
-
-        // Press `c` to toggle color on/off.
         if (e.key == 'c') {
+          // Press `c` to toggle color on/off.
           renderMode = (renderMode + 1) % 2;
+        } else if (e.key == ' ') {
+          // Press `space` to start/stop rotation.
+          rotationSpeed = 0.01 * !rotationSpeed;
+        } else if (e.key == 'd') {
+          // Press `d` to download the image.
+          depthExporter.download(scene, camera);
         }
       });
     </script>

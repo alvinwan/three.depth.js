@@ -1,26 +1,6 @@
 <html>
   <head>
     <title>Export 360 Depth Map in Equirectangular</title>
-    <style>
-    body {
-        margin: 0;
-      }
-    #c {
-      width: 100vw;
-      height: 100vh;
-      display: block;
-    }
-    #capture{
-      position: absolute;
-      left: 20px;
-      top: 20px;
-      padding: 10px;
-      border: 1px solid white;
-      z-index: 100;
-      cursor: pointer;
-      background-color: rgba( 0,0,0,.4);
-    }
-    </style>
    <link href="../css/basic.css" rel="stylesheet">
    <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
    <script src="../js/WebGLDepthExporter.js"></script>
@@ -31,7 +11,7 @@
   </head> 
   <body>
     <canvas id="c"></canvas>
-    <div id="capture" >Capture</div>
+    <div id="capture">Capture</div>
 
     <div id="info">
 			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>

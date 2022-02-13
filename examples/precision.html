@@ -41,30 +41,39 @@
        * Extras
        */
 
+      // User interactions state
+      let rotationSpeed = 0.01;
+      let renderMode = 0; // toggle color (0 - depth, 1 - color)
+
       // Spin the scene around
       function render() {
 
         if (renderMode == 0) {
-          // Render depth to canvas
+          // Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, camera);
         } else {
-          // Render rgb to canvas
+          // Render rgb to the canvas
           renderer.setRenderTarget(null);
           renderer.render(scene, camera);
         }
 
         // Rotate camera
-        camera.rotation.y += 0.01;
+        camera.rotation.y += rotationSpeed;
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
 
-      // Press `c` to toggle color on/off. (0 - depth, 1 - color)
-      let renderMode = 0;
       document.addEventListener('keydown', function(e) {
         if (e.key == 'c') {
+          // Press `c` to toggle color on/off.
           renderMode = (renderMode + 1) % 2;
+        } else if (e.key == ' ') {
+          // Press `space` to start/stop rotation.
+          rotationSpeed = 0.01 * !rotationSpeed;
+        } else if (e.key == 'd') {
+          // Press `d` to download the image.
+          depthExporter.download();
         }
       });
     </script>
