@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Export 360 Depth Map in Equirectangular</title>
+    <title>Download 360 Depth Map in Equirectangular</title>
    <link href="../css/basic.css" rel="stylesheet">
    <script src="https://unpkg.com/three@0.125.1/build/three.min.js"></script>
    <script src="../js/WebGLDepthExporter.js"></script>
@@ -15,7 +15,7 @@
 
     <div id="info">
 			<a href="https://github.com/alvinwan/threejs.depth" target="_blank" rel="noopener">threejs.depth</a> webgl - depth texture<br/>
-			Exports cubemap depth (1-6), downloads equirectangular depth (top-left button), toggle color (c).<br/>
+			Pick cube camera (1-6), Toggle color (c). Start/stop rotation (space). Download depth (d)<br/>
       Created by <a href="http://twitter.com/lvinwan">@lvinwan</a>.
 		</div>
 
@@ -25,23 +25,42 @@
       const renderer = new THREE.WebGLRenderer({canvas});
       let scene = setupTorusKnotScene();
 
-      // 1. Initialize depth exporters
-      const depthExporter = new THREE.WebGLDepthExporter(renderer);
-      const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
-
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
       const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
       const cubeCamera = new THREE.CubeCamera(0.01, 10, cubeRenderTarget);
       scene.add(cubeCamera);
 
+      // 1. Initialize depth exporter
+      const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
+      cubeDepthExporter.setSize(canvas.width, canvas.height);
+
+      // 2. Render depth in all directions to a cubemap
+      cubeDepthExporter.setRenderTarget(cubeRenderTarget);
+      cubeDepthExporter.render(scene, cubeCamera);
+      cubeDepthExporter.setRenderTarget(null);
+
+      // 3. Run cubemap to equirectangular conversion
+      const equi = new CubemapToEquirectangular( renderer, false );
+      // equi.convert( cubeCamera ); // Uncomment to download on page load.
+
+      /**
+       * Extras
+       */
+
+      // Create another depth exporter to display depth maps on screen
+      const depthExporter = new THREE.WebGLDepthExporter(renderer);
+      depthExporter.setSize(canvas.width, canvas.height);
+
       // Support for some user interaction
+      let rotationSpeed = 0.01;
       let canvasCameraIndex = 5; // chose which cube face to render
       let renderMode = 0; // Toggle color: 0 - depth, 1 - color
     
+      // Spin the scene around
       function render() {
         if (renderMode == 0) {
-          // 2a. Render depth to the canvas
+          // Render depth to the canvas
           depthExporter.setRenderTarget(null);
           depthExporter.render(scene, cubeCamera.children[canvasCameraIndex]);
         } else {
@@ -51,40 +70,48 @@
         }
     
         // Rotate camera
-        cubeCamera.rotation.y += 0.01;
+        cubeCamera.rotation.y += rotationSpeed;
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render); // begin animation
 
-      // Setup cubemap to equirectangular conversion
-      const equi = new CubemapToEquirectangular( renderer, false );
-      document.getElementById( 'capture' ).addEventListener( 'click', function( e ) {
-          // Reset aspect ratio to 1. No idea why this is needed, but it is.
-          var ratio = getCubeCameraAspectRatio(cubeCamera);
-          setCubeCameraAspectRatio(cubeCamera, 1);
-
-          // 2b. Render depth in all directions to a cubemap
-          cubeDepthExporter.setRenderTarget(cubeRenderTarget);
-          cubeDepthExporter.render(scene, cubeCamera);
-          cubeDepthExporter.setRenderTarget(null);
-
-          // Unmanaged conversion. Do not use managed version since it will attempt 
-          // a re-render. We previously manually rendered every cube face ourselves
-          // already. This manual rendering, face by face, to save the depth values,
-          // is necessary, since the *cube render target doesnt support depth textures.
-          equi.convert( cubeCamera );
-
-          // Restore aspect ratio
-          setCubeCameraAspectRatio(cubeCamera, ratio);
-      });
-
       document.addEventListener('keydown', function(e) {
         if (e.keyCode >= 49 && e.keyCode < 55) {
+          // Press number between 1 and 6 to toggle between cameras
           canvasCameraIndex = e.keyCode - 49;
         } else if (e.key == 'c') {
-          renderMode = (renderMode + 1) % 2;
+          // Press `c` to toggle color on/off.
+          renderMode = renderMode ? 0 : 1;
+        } else if (e.key == ' ') {
+          // Press `space` to start/stop rotation.
+          rotationSpeed = 0.01 * !rotationSpeed;
+        } else if (e.key == 'd') {
+          // Press `d` to download the image.
+          download360Equirectangular();
         }
       });
+
+      function download360Equirectangular() {
+        // Reset aspect ratio to 1. No idea why this is needed, but it is.
+        var ratio = getCubeCameraAspectRatio(cubeCamera);
+        setCubeCameraAspectRatio(cubeCamera, 1);
+
+        // 2. Render depth in all directions to a cubemap
+        cubeDepthExporter.setRenderTarget(cubeRenderTarget);
+        cubeDepthExporter.render(scene, cubeCamera);
+        cubeDepthExporter.setRenderTarget(null);
+
+        // Unmanaged conversion. Do not use managed version since it will attempt 
+        // a re-render. We previously manually rendered every cube face ourselves
+        // already. This manual rendering, face by face, to save the depth values,
+        // is necessary, since the *cube render target doesnt support depth textures.
+        equi.convert( cubeCamera );
+
+        // Restore aspect ratio
+        setCubeCameraAspectRatio(cubeCamera, ratio);
+      }
+
+      document.getElementById( 'capture' ).addEventListener( 'click', download360Equirectangular);
 
       function onWindowResize() {
         renderer.setSize(canvas.clientWidth, canvas.clientHeight);

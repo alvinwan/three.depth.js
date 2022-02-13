@@ -79,7 +79,7 @@
       document.addEventListener('keydown', function(e) {
         if (e.key == 'c') {
           // Press `c` to toggle color on/off.
-          renderMode = (renderMode + 1) % 2;
+          renderMode = renderMode ? 0 : 1;
         } else if (e.key == ' ') {
           // Press `space` to start/stop rotation.
           rotationSpeed = 0.01 * !rotationSpeed;
@@ -87,6 +87,10 @@
           // Press `d` to download the image.
           depthExporter.download(scene, camera);
         }
+      });
+
+      document.querySelector('#capture').addEventListener('click', function() {
+        depthExporter.download(scene, camera);
       });
     </script>
   </body>
