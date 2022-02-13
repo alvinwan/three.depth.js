@@ -50,14 +50,14 @@ AFRAME.registerComponent('download-360-depth-map', {
         cubeDepthExporter.setSize(canvas.width, canvas.height);
 
         // 3. Create a cube camera tracking the aframe camera
-        const cubeCamera = cubeDepthExporter.perspectiveToCubeCamera(camera);
+        const cubeCamera = THREE.WebGLCubeDepthExporter.cubeCameraFromPerspectiveCamera(camera);
 
         // Download depth map on key press
         const downloadKey = this.data.downloadKey;
         document.addEventListener('keypress', function(e) {
             if (e.key == downloadKey) {
                 // 4. Update cube camera to match aframe camera
-                cubeCameraTrackPerspective(cubeCamera, camera);
+                THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
 
                 // 5. Render depth in all directions to a cubemap
                 cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);

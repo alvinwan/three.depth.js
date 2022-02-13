@@ -73,7 +73,7 @@ class WebGLDepthExporter {
             this.render(this.depthScene, this.depthCamera);
             this.setRenderTarget(null);
         });
-        return this.downloader.renderTargetToImage(this.imageRenderTarget);
+        return this.downloader.renderTargetToImage(this.imageRenderTarget, false, true);
     }
 
     /**
@@ -150,77 +150,6 @@ class WebGLDepthExporter {
 class WebGLDepthExporterShaders {
     static fragmentShaderLineRGB = 'gl_FragColor = packDepthToRGBA( gl_FragColor.r );';
     static fragmentShaderLineBasic = 'gl_FragColor.rgb = (1.0 - vec3( gl_FragColor.r )) * 255.0;\ngl_FragColor.a = 1.0;';
-}
-
-class Downloader {
-    constructor(renderer) {
-        this.renderer = renderer;
-
-        // Initialize canvas for blob conversion
-        this.canvas = document.createElement( 'canvas' );
-	    this.ctx = this.canvas.getContext( '2d' );
-
-        let size = new THREE.Vector2();
-        this.renderer.getSize(size);
-        this.setSize(size.x, size.y);
-    }
-
-    setSize(width, height) {
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.width = width;
-        this.height = height;
-    }
-
-    download(image) {
-        this.ctx.putImageData( image, 0, 0 );
-
-        this.canvas.toBlob( function( blob ) {
-
-            var url = URL.createObjectURL(blob);
-            var fileName = 'image-' + document.title + '-' + Date.now() + '.png';
-            var anchor = document.createElement( 'a' );
-            anchor.href = url;
-            anchor.setAttribute("download", fileName);
-            anchor.className = "download-js-link";
-            anchor.innerHTML = "downloading...";
-            anchor.style.display = "none";
-            document.body.appendChild(anchor);
-            setTimeout(function() {
-                anchor.click();
-                document.body.removeChild(anchor);
-            }, 1 );
-
-        }, 'image/png' );
-    }
-
-    renderTargetToImage(renderTarget) {
-        // Write render target depth to pixel array
-        const raw = new Uint8Array( 4 * this.width * this.height );
-        this.renderer.readRenderTargetPixels(renderTarget, 0, 0, this.width, this.height, raw);
-
-        // Flip pixels vertically. For some reason, all pixel arrays are flipped vertically.
-        const pixels = Downloader.flipPixelsVertically(raw, this.width, this.height);
-
-        // Create image from pixel array
-        const image = new ImageData( new Uint8ClampedArray( pixels ), this.width, this.height );
-
-        return image;
-    }
-
-    static flipPixelsVertically(pixels, width, height) {
-        const flipped = new Uint8Array(4 * width * height);
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const index = (y * width + x) * 4;
-                const flippedIndex = ((height - y - 1) * width + x) * 4;
-                for (let i = 0; i < 4; i++) {
-                    flipped[flippedIndex + i] = pixels[index + i];
-                }
-            }
-        }
-        return flipped;
-    }
 }
 
 THREE.WebGLDepthExporter = WebGLDepthExporter;

@@ -32,7 +32,7 @@ class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
         return super.toImage();
     }
 
-    perspectiveToCubeCamera(perspectiveCamera) {
+    static cubeCameraFromPerspectiveCamera(perspectiveCamera) {
         // Initialize camera intrinsics with perspective camera
         const near = perspectiveCamera.near;
         const far = perspectiveCamera.far;
@@ -40,14 +40,18 @@ class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
         const cubeCamera = new THREE.CubeCamera(near, far, cubeRenderTarget);
 
         // Initialize camera extrinsics with perspective camera
+        this.cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera);
+        return cubeCamera;
+    }
+
+    static cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera) {
+        // Update camera extrinsics with perspective camera's
         const position = perspectiveCamera.position;
         const up = perspectiveCamera.up;
         const quaternion = perspectiveCamera.quaternion;
         cubeCamera.position.copy(position);
         cubeCamera.up.copy(up);
         cubeCamera.quaternion.copy(quaternion);
-
-        return cubeCamera;
     }
 }
 

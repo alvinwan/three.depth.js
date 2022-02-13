@@ -86,6 +86,8 @@ function CubemapToEquirectangular( renderer, provideCubeCamera ) {
 	this.cubeCamera = null;
 	this.attachedCamera = null;
 
+	this.downloader = new Downloader(renderer);
+
 	this.setSize( 4096, 2048 );
 
 	var gl = this.renderer.getContext();
@@ -120,6 +122,8 @@ CubemapToEquirectangular.prototype.setSize = function( width, height ) {
 		type: THREE.UnsignedByteType
 	});
 
+	this.downloader.setSize(this.width, this.height);
+
 	this.canvas.width = this.width;
 	this.canvas.height = this.height;
 
@@ -148,11 +152,7 @@ CubemapToEquirectangular.prototype.convert = function( cubeCamera, download ) {
     this.renderer.setRenderTarget(this.output);
 	this.renderer.render( this.scene, this.camera);
 
-	var pixels = new Uint8Array( 4 * this.width * this.height );
-	this.renderer.readRenderTargetPixels( this.output, 0, 0, this.width, this.height, pixels );
-
-	var imageData = new ImageData( new Uint8ClampedArray( pixels ), this.width, this.height );
-
+	const imageData = this.downloader.renderTargetToImage(this.output);
 	if( download !== false ) {
 		this.download( imageData );
 	}
@@ -163,27 +163,7 @@ CubemapToEquirectangular.prototype.convert = function( cubeCamera, download ) {
 };
 
 CubemapToEquirectangular.prototype.download = function( imageData ) {
-
-	this.ctx.putImageData( imageData, 0, 0 );
-
-	this.canvas.toBlob( function( blob ) {
-
-		var url = URL.createObjectURL(blob);
-		var fileName = 'pano-' + document.title + '-' + Date.now() + '.png';
-		var anchor = document.createElement( 'a' );
-		anchor.href = url;
-		anchor.setAttribute("download", fileName);
-		anchor.className = "download-js-link";
-		anchor.innerHTML = "downloading...";
-		anchor.style.display = "none";
-		document.body.appendChild(anchor);
-		setTimeout(function() {
-			anchor.click();
-			document.body.removeChild(anchor);
-		}, 1 );
-
-	}, 'image/png' );
-
+	this.downloader.download( imageData );
 };
 
 CubemapToEquirectangular.prototype.update = function( camera, scene ) {

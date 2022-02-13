@@ -8,6 +8,7 @@
 
     <script src="../js/CubemapToEquirectangular.js"></script>
     <script src="../js/WebGLCubeDepthExporter.js"></script>
+    <script src="../js/Downloader.js"></script>
   </head> 
   <body>
     <canvas id="c"></canvas>
@@ -22,13 +23,16 @@
     <script>
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('#c');
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 10);
+      const scene = setupTorusKnotScene();
+
+      // Initialize renderer
       const renderer = new THREE.WebGLRenderer({canvas});
-      let scene = setupTorusKnotScene();
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
-      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-      const cubeCamera = new THREE.CubeCamera(0.01, 10, cubeRenderTarget);
+      const cubeCamera = THREE.WebGLCubeDepthExporter.cubeCameraFromPerspectiveCamera(camera);
       scene.add(cubeCamera);
 
       // 1. Initialize depth exporter
@@ -38,7 +42,7 @@
       cubeDepthExporter.setSize(canvas.width, canvas.height);
 
       // 3. Render depth in all directions to a cubemap
-      cubeDepthExporter.setRenderTarget(cubeRenderTarget);
+      cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
       cubeDepthExporter.render(scene, cubeCamera);
       cubeDepthExporter.setRenderTarget(null);
 
@@ -64,15 +68,15 @@
         if (renderMode == 0) {
           // Render depth to the canvas
           depthExporter.setRenderTarget(null);
-          depthExporter.render(scene, cubeCamera.children[canvasCameraIndex]);
+          depthExporter.render(scene, camera);
         } else {
           // Render rgb to the canvas
           renderer.setRenderTarget(null);
-          renderer.render(scene, cubeCamera.children[canvasCameraIndex]);
+          renderer.render(scene, camera);
         }
     
         // Rotate camera
-        cubeCamera.rotation.y += rotationSpeed;
+        camera.rotation.y += rotationSpeed;
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render); // begin animation
@@ -94,12 +98,15 @@
       });
 
       function download360Equirectangular() {
+        // Update cube camera extrinsics to match perspective camera used for viewing
+        THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
+
         // Reset aspect ratio to 1. No idea why this is needed, but it is.
         var ratio = getCubeCameraAspectRatio(cubeCamera);
         setCubeCameraAspectRatio(cubeCamera, 1);
 
         // 2. Render depth in all directions to a cubemap
-        cubeDepthExporter.setRenderTarget(cubeRenderTarget);
+        cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
         cubeDepthExporter.render(scene, cubeCamera);
         cubeDepthExporter.setRenderTarget(null);
 
