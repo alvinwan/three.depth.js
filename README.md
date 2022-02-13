@@ -6,7 +6,7 @@ Easily export depth maps from a three.js scene, using just a few lines of code. 
 - exporting 360 depth maps in equirectangular format
 - integrating with AFrame
 
-![threejs.depth preview](https://user-images.githubusercontent.com/2068077/153713671-65a207a5-2e73-4db2-b7dd-d6f1a9c15093.jpg)
+![preview](https://user-images.githubusercontent.com/2068077/153742846-6ae61a83-77d3-479e-ba59-a999c801f6d8.jpg)
 
 ## Getting Started
 
