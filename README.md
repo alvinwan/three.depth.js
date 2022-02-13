@@ -41,7 +41,7 @@ depthExporter.download(scene, camera);
 
 See these examples for working demos and annotated source code:
 
-- [Hello World](http://alvinwan.com/threejs.depth/examples/helloworld.html) - basic 3 steps to extract depth from a scene
+- [Hello World](http://alvinwan.com/threejs.depth/examples/basic.html) - basic 3 steps to extract depth from a scene
 - [Higher-Precision Depth](http://alvinwan.com/threejs.depth/examples/precision.html) - export a higher-precision depth using base 256 numbers encoded in RGB channels
 - [Download Depth Map](http://alvinwan.com/threejs.depth/examples/export.html) - export and download a depth map
 - [Download 360 Depth Map](http://alvinwan.com/threejs.depth/examples/export360.html) - export 360 depth using a cube camera and download an equirectangular depth map
@@ -57,5 +57,5 @@ The nice part is that three.js already computes the depth of each pixel, from a 
 
 2. The color texture in your second scene is applied to a flat plane. The camera in this scene is an orthographic camera pointed at the flat plane. Once this second scene is rendered to a render target your choice, you then have a depth map to do whatever you want with!
 
-In the examples above, we show how to display this depth map ([example](http://alvinwan.com/threejs.depth/examples/helloworld.html)), download the depth map ([example](http://alvinwan.com/threejs.depth/examples/export.html)), and download a 360 depth map in equirectangular format ([example](http://alvinwan.com/threejs.depth/examples/export360.html))
+In the examples above, we show how to display this depth map ([example](http://alvinwan.com/threejs.depth/examples/basic.html)), download the depth map ([example](http://alvinwan.com/threejs.depth/examples/export.html)), and download a 360 depth map in equirectangular format ([example](http://alvinwan.com/threejs.depth/examples/export360.html))
 
