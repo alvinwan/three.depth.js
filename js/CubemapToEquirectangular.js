@@ -152,7 +152,7 @@ CubemapToEquirectangular.prototype.convert = function( cubeCamera, download ) {
     this.renderer.setRenderTarget(this.output);
 	this.renderer.render( this.scene, this.camera);
 
-	const imageData = this.downloader.renderTargetToImage(this.output);
+	const imageData = this.downloader.renderTargetToImage(this.output, true, true);
 	if( download !== false ) {
 		this.download( imageData );
 	}

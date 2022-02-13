@@ -44,14 +44,22 @@ class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
         return cubeCamera;
     }
 
-    static cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera) {
+    static cubeCameraTrackPerspectiveCamera(cCamera, pCamera) {
         // Update camera extrinsics with perspective camera's
-        const position = perspectiveCamera.position;
-        const up = perspectiveCamera.up;
-        const quaternion = perspectiveCamera.quaternion;
-        cubeCamera.position.copy(position);
-        cubeCamera.up.copy(up);
-        cubeCamera.quaternion.copy(quaternion);
+        const position = pCamera.position;
+        const quaternion = pCamera.quaternion;
+        cCamera.position.copy(position);
+
+        // Calculate "look at" vector
+        const up = pCamera.up;
+        const direction = new THREE.Vector3(0, 0, -1);
+        const lookAt = direction.applyQuaternion(quaternion);
+
+        // For some reason, setting quaternion directly flips cube camera
+        // upside down, so that none of the cameras match the camera we're
+        // copying.
+        cCamera.up.set(up.x, -up.y, up.z);
+        cCamera.lookAt(lookAt)
     }
 }
 

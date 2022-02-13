@@ -23,7 +23,7 @@
     <script>
       // Initialize the usual stuff, along with a scene
       const canvas = document.querySelector('#c');
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 10);
+      const camera = new THREE.PerspectiveCamera(90, 1, 0.01, 10);
       const scene = setupTorusKnotScene();
 
       // Initialize renderer
@@ -60,19 +60,24 @@
 
       // Support for some user interaction
       let rotationSpeed = 0.01;
-      let canvasCameraIndex = 5; // chose which cube face to render
+      let canvasCameraIndex = 4; // chose which cube face to render
       let renderMode = 0; // Toggle color: 0 - depth, 1 - color
     
       // Spin the scene around
       function render() {
+        // Update cube camera extrinsics to match perspective camera used for viewing
+        THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
+
+        let previewCamera = canvasCameraIndex > -1 ? cubeCamera.children[canvasCameraIndex] : camera;
+
         if (renderMode == 0) {
           // Render depth to the canvas
           depthExporter.setRenderTarget(null);
-          depthExporter.render(scene, camera);
+          depthExporter.render(scene, previewCamera);
         } else {
           // Render rgb to the canvas
           renderer.setRenderTarget(null);
-          renderer.render(scene, camera);
+          renderer.render(scene, previewCamera);
         }
     
         // Rotate camera
@@ -82,7 +87,7 @@
       requestAnimationFrame(render); // begin animation
 
       document.addEventListener('keydown', function(e) {
-        if (e.keyCode >= 49 && e.keyCode < 55) {
+        if (e.keyCode >= 48 && e.keyCode < 55) {
           // Press number between 1 and 6 to toggle between cameras
           canvasCameraIndex = e.keyCode - 49;
         } else if (e.key == 'c') {
@@ -124,8 +129,11 @@
 
       function onWindowResize() {
         renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        // Set aspect ratios for both sets of cameras
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
         setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
-        // 3. Update depth exporter size when window size changes
+        // Update depth exporter size when window size changes
         depthExporter.setSize(canvas.width, canvas.height);
         cubeDepthExporter.setSize(canvas.width, canvas.height);
       }
