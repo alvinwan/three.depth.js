@@ -10,10 +10,10 @@ Easily export depth maps from a three.js scene, using just a few lines of code. 
 
 ## Getting Started
 
-First, include the source
+Add a script tag to bring in all `three.depth.js` utilities.
 
 ```html
-<script src="js/WebGLDepthExporter.js">
+<script src="https://cdn.jsdelivr.net/gh/alvinwan/three.depth.js@51a2745/build/three.depth.js">
 ```
 
 Then, export depth in 3 steps.
@@ -94,3 +94,8 @@ The nice part is that three.js already computes the depth of each pixel, from a 
 
 In the examples above, we show how to display this depth map ([example](http://alvinwan.com/threejs.depth/examples/basic.html)), download the depth map ([example](http://alvinwan.com/threejs.depth/examples/export.html)), and download a 360 depth map in equirectangular format ([example](http://alvinwan.com/threejs.depth/examples/export360.html))
 
+## "Deploy"
+
+```
+awk '{print $0}' js/*.js > build/three.depth.js
+```
