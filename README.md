@@ -19,25 +19,60 @@ First, include the source
 Then, export depth in 3 steps.
 
 ```javascript
-...
-
-// Initialize the usual stuff, along with a scene
-const canvas = document.querySelector('canvas');
-const renderer = new THREE.WebGLRenderer({canvas});
-
-// 1. Initialize a depth exporter
+// 1. Initialize depth exporter
 const depthExporter = new THREE.WebGLDepthExporter(renderer);
 
-// 2. Update the depth exporter size on init
+// 2. Update the depth exporter size
 depthExporter.setSize(canvas.width, canvas.height);
 
-// 3. Render the depth map to canvas
+// 3. Render depth to the canvas
 depthExporter.setRenderTarget(null);
 depthExporter.render(scene, camera);
 
 // optionally, download the depth map
 depthExporter.download(scene, camera);
 ```
+
+## Aframe Usage
+
+We provide 3 different Aframe components out of the box:
+
+- `download-depth-map-onload`: Downloads a 2d depth map as soon as the scene loads.
+- `preview-depth-map`: Creates a depth map preview on top of the aframe scene.
+- `download-depth-map`: Allows you to download depth maps in either 2d (`p`) or 3d (equirectangular, `space`)
+
+You can specify the `packing` variable to be either `basic` or `rgba` (higher precision) for all components. 
+
+## 360 Depth Map Usage
+
+To download a 360 depth map in equirectangular format, follow the steps below.
+
+```javascript
+// 1. Initialize depth exporter
+const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
+
+// 2. Create cube camera to generate a cubmap of depths, tracking the original
+// camera.
+const cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
+scene.add(cubeCamera); // !!IMPORTANT!! Do not forget. Otherwise, every face sees the same thing.
+
+// 3. Update the depth exporter size
+cubeDepthExporter.setSize(canvas.width, canvas.height);
+
+// 4. Update camera intrinsics for export (extrinsics already up-to-date)
+cubeCamera.updateIntrinsicsForExport();
+
+// 5. Render depth in all directions to a cubemap
+cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
+cubeDepthExporter.render(scene, cubeCamera);
+cubeDepthExporter.setRenderTarget(null);
+
+// 6. Download equirectangular depth map
+const equi = new CubemapToEquirectangular(renderer, false);
+equi.convert(cubeCamera);
+```
+
+## Examples
 
 See these examples for working demos and annotated source code:
 
