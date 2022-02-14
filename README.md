@@ -2,9 +2,9 @@
 
 Easily export depth maps from a three.js scene, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
 
-- downloading depth maps
-- exporting 360 depth maps in equirectangular format
-- integrating with AFrame
+- downloading and viewing depth maps
+- downloading 360 depth maps in equirectangular format
+- integrating with AFrame scenes
 
 ![preview](https://user-images.githubusercontent.com/2068077/153742846-6ae61a83-77d3-479e-ba59-a999c801f6d8.jpg)
 
@@ -41,7 +41,14 @@ We provide 3 different Aframe components out of the box:
 - `preview-depth-map`: Creates a depth map preview on top of the aframe scene.
 - `download-depth-map`: Allows you to download depth maps in either 2d (`p`) or 3d (equirectangular, `space`)
 
-You can specify the `packing` variable to be either `basic` or `rgba` (higher precision) for all components. 
+You can specify the `packing` variable to be either `basic` or `rgba` (higher precision) for all components. For example,
+
+```html
+<a-scene download-depth-map-on-load="packing: rgba"
+         download-depth-map="packing: rgba"
+         preview-depth-map="packing: basic">
+</a-scene>
+```
 
 ## 360 Depth Map Usage
 
