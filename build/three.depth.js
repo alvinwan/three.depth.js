@@ -122,6 +122,7 @@ function registerThreeDepthJsAframeComponents() {
       let canvas = renderer.domElement;
 
       // 1. Initialize depth exporters and helpers
+      packing = DEPTH_PACKING[packing];
       this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing}); // for 2d depth map
       this.depthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
       this.cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {packing}); // for 3d depth map
