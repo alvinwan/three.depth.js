@@ -1,11 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&display=swap');
+
+main {
+	padding:4em 6em;
+}
+
+.examples {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.text {
+	padding:0.5em;
+}
+
+.example {
+	flex: 1 0 calc(33% - 1em);
+	margin: 0.5em;
+	border-radius:0.5em;
+	background-color:#333;
+	overflow:hidden;
+}
+
+.example a {
+	height:100%;
+	width:100%;
+	display:block;
+}
+
+.example img {
+	width:100%;
+}
+
+.example h2 {
+	color:#999;
+	padding-left:1em;
+}
+
+.example a:hover {
+	text-decoration:none;
+	background-color:#444;
+}
+
+.example a:hover h2 {
+	color:#fff;
+}
+
 /**
  * Styles taken from ThreeJS
  */
 body {
 	margin: 0;
-	background-color: #000;
+	background-color: #222;
 	color: #fff;
-	font-family: Monospace;
+	font-family: 'Roboto Mono', monospace;
 	font-size: 13px;
 	line-height: 24px;
 	overscroll-behavior: none;
