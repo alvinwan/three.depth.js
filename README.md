@@ -1,10 +1,6 @@
 # three.depth.js
 
-Easily export depth maps from a three.js scene, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
-
-- downloading and viewing depth maps
-- downloading 360 depth maps in equirectangular format
-- integrating with AFrame scenes
+Easily display and download depth maps for a `three.js` scene, using just a few lines of code. Includes built-in support for 360 depth maps and Aframe scenes.
 
 ![preview](https://user-images.githubusercontent.com/2068077/153742846-6ae61a83-77d3-479e-ba59-a999c801f6d8.jpg)
 
@@ -16,7 +12,7 @@ Add a script tag to bring in all `three.depth.js` utilities.
 <script src="https://cdn.jsdelivr.net/gh/alvinwan/three.depth.js@51a2745/build/three.depth.js">
 ```
 
-Then, export depth in 3 steps.
+Then, display a depth map in 3 steps. Our custom `WebGLDepthExporter` is used just like a standard renderer.
 
 ```javascript
 // 1. Initialize depth exporter
@@ -32,6 +28,8 @@ depthExporter.render(scene, camera);
 // optionally, download the depth map
 depthExporter.download(scene, camera);
 ```
+
+See [example](https://alvinwan.com/three.depth.js/examples/download.html).
 
 ## Aframe Usage
 
@@ -50,9 +48,11 @@ You can specify the `packing` variable to be either `basic` or `rgba` (higher pr
 </a-scene>
 ```
 
+See [example](https://alvinwan.com/three.depth.js/examples/aframe.html).
+
 ## 360 Depth Map Usage
 
-To download a 360 depth map in equirectangular format, follow the steps below.
+To download 360 depth maps, render depth in all directions to a cube camera's render target. Then, conver the cubemap depth to equirectangular format, and download, as shown below:
 
 ```javascript
 // 1. Initialize depth exporter
@@ -78,6 +78,8 @@ cubeDepthExporter.setRenderTarget(null);
 const equi = new CubemapToEquirectangular(renderer, false);
 equi.convert(cubeCamera);
 ```
+
+See [example](https://alvinwan.com/three.depth.js/examples/download360.html).
 
 ## Examples
 
