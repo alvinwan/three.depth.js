@@ -17,6 +17,7 @@ main {
 .example {
 	flex: 1 0 calc(33% - 1em);
 	margin: 0.5em;
+	min-width:20em;
 	border-radius:0.5em;
 	background-color:#333;
 	overflow:hidden;
@@ -42,9 +43,7 @@ main {
 	background-color:#444;
 }
 
-.example a:hover h2 {
-	color:#fff;
-}
+.example a:hover h2 {}
 
 /**
  * Styles taken from ThreeJS
