@@ -9,7 +9,7 @@ Easily display and download depth maps for a `three.js` scene, using just a few 
 Add a script tag to bring in all `three.depth.js` utilities.
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/alvinwan/three.depth.js@51a2745/build/three.depth.js">
+<script src="https://cdn.jsdelivr.net/gh/alvinwan/three.depth.js@f97525a/build/three.depth.js">
 ```
 
 Then, display a depth map in 3 steps. Our custom `WebGLDepthExporter` is used just like a standard renderer.
