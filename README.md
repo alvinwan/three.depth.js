@@ -1,6 +1,6 @@
 # three.depth.js
 
-Easily display and download depth maps for a `three.js` scene, using just a few lines of code. Includes built-in support for 360 depth maps and Aframe scenes.
+Easily display and download depth maps for a `three.js` scene, using just a few lines of code. Includes built-in support for 360 depth maps and Aframe scenes. See [examples](https://alvinwan.com/three.depth.js/examples).
 
 ![preview](https://user-images.githubusercontent.com/2068077/153742846-6ae61a83-77d3-479e-ba59-a999c801f6d8.jpg)
 
@@ -90,6 +90,8 @@ See these examples for working demos and annotated source code:
 - [Higher-Precision Depth](https://alvinwan.com/three.depth.js/examples/precision.html) - download a higher-precision depth map by packing depth into RGB
 - [Download 360 Depth Map](https://alvinwan.com/three.depth.js/examples/download360.html) - download 360 depth map in equirectangular format
 - [Aframe](https://alvinwan.com/three.depth.js/examples/aframe.html) - aframe hello world scene with both rectilinear and equirectangular depth map downloads
+
+Preview all examples [here](https://alvinwan.com/three.depth.js/examples).
 
 ## How it Works
 
