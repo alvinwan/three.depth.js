@@ -43,10 +43,47 @@ class CubePerspectiveCamera extends THREE.CubeCamera {
         });
     }
 
+    updateExtrinsicsWith(camera) {
+        // Update camera extrinsics with perspective camera's
+        camera.updateMatrixWorld();
+        this.updateMatrixWorld();
+        camera.getWorldPosition(this.position);
+        camera.getWorldQuaternion(this.quaternion);
+        this.flip(); // Flip cube camera so the front matches the perspective camera
+    }
+
+    updateIntrinsicsForDisplay(camera) {
+        this.aspect = camera.aspect;
+        this.fov = camera.fov;
+        this.updateProjectionMatrix();
+    }
+
+    updateIntrinsicsForExport() {
+        this.aspect = 1;
+        this.fov = 90;
+        this.updateProjectionMatrix();
+    }
+
     updateProjectionMatrix() {
         this.children.forEach(child => {
             child.updateProjectionMatrix();
         });
+    }
+
+    static fromPerspectiveCamera(perspectiveCamera) {
+        // Initialize camera intrinsics with perspective camera
+        const near = perspectiveCamera.near;
+        const far = perspectiveCamera.far;
+        const aspect = perspectiveCamera.aspect;
+        const fov = perspectiveCamera.fov;
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
+        const cubeCamera = new THREE.CubePerspectiveCamera(near, far, aspect, fov, cubeRenderTarget);
+
+        // Initialize camera extrinsics with perspective camera
+        cubeCamera.updateExtrinsicsWith(perspectiveCamera);
+
+        // Returned camera is ready for display
+        return cubeCamera;
     }
 }
 

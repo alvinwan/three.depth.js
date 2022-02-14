@@ -31,23 +31,26 @@
       const renderer = new THREE.WebGLRenderer({canvas});
       renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
-      // Use a cube camera so that we don't need to manually initialize the 6 
-      // perspective cameras needed for a cubemap.
-      const cubeCamera = THREE.WebGLCubeDepthExporter.cubeCameraFromPerspectiveCamera(camera);
-      scene.add(cubeCamera); // !!IMPORTANT!! Do not forget. Otherwise, every face sees the same thing.
-
       // 1. Initialize depth exporter
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
 
-      // 2. Update the depth exporter size
+      // 2. Create cube camera to generate a cubmap of depths, tracking the original
+      // camera.
+      const cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
+      scene.add(cubeCamera); // !!IMPORTANT!! Do not forget. Otherwise, every face sees the same thing.
+
+      // 3. Update the depth exporter size
       cubeDepthExporter.setSize(canvas.width, canvas.height);
 
-      // 3. Render depth in all directions to a cubemap
+      // 4. Update camera intrinsics for export (extrinsics already up-to-date)
+      cubeCamera.updateIntrinsicsForExport();
+
+      // 5. Render depth in all directions to a cubemap
       cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
       cubeDepthExporter.render(scene, cubeCamera);
       cubeDepthExporter.setRenderTarget(null);
 
-      // 4. Run cubemap to equirectangular conversion
+      // 6. Download equirectangular depth map
       const equi = new CubemapToEquirectangular( renderer, false );
       // equi.convert( cubeCamera ); // Uncomment to download on page load.
 
@@ -66,9 +69,7 @@
     
       // Spin the scene around
       function render() {
-        // Update cube camera extrinsics to match perspective camera used for viewing
-        THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
-
+        cubeCamera.updateExtrinsicsWith(camera); // Match perspective camera used for viewing
         let previewCamera = canvasCameraIndex > -1 ? cubeCamera.children[canvasCameraIndex] : camera;
 
         if (renderMode == 0) {
@@ -104,18 +105,10 @@
       });
 
       function download360Equirectangular() {
-        // Update cube camera extrinsics to match perspective camera used for viewing
-        THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
+        cubeCamera.updateIntrinsicsForExport(); // Prepare camera faces for export
+        cubeCamera.updateExtrinsicsWith(camera); // Match perspective camera used for viewing
 
-        // Reset aspect ratio to 1. Otherwise, each face looks at too much or too
-        // little of the scene.
-        const aspect = cubeCamera.aspect;
-        const fov = cubeCamera.fov;
-        cubeCamera.aspect = 1;
-        cubeCamera.fov = 90;
-        cubeCamera.updateProjectionMatrix();
-
-        // 2. Render depth in all directions to a cubemap
+        // Render depth in all directions to a cubemap
         cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
         cubeDepthExporter.render(scene, cubeCamera);
         cubeDepthExporter.setRenderTarget(null);
@@ -126,10 +119,8 @@
         // is necessary, since the *cube render target doesnt support depth textures.
         equi.convert( cubeCamera );
 
-        // Restore aspect ratio
-        cubeCamera.aspect = aspect;
-        cubeCamera.fov = fov;
-        cubeCamera.updateProjectionMatrix();
+        // Restore settings used for rendering
+        cubeCamera.updateIntrinsicsForDisplay(camera, canvas);
       }
 
       document.getElementById( 'capture' ).addEventListener( 'click', download360Equirectangular);
