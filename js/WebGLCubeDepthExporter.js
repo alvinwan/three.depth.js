@@ -36,30 +36,23 @@ class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
         // Initialize camera intrinsics with perspective camera
         const near = perspectiveCamera.near;
         const far = perspectiveCamera.far;
+        const aspect = perspectiveCamera.aspect;
+        const fov = perspectiveCamera.fov;
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-        const cubeCamera = new THREE.CubeCamera(near, far, cubeRenderTarget);
+        const cubeCamera = new THREE.CubePerspectiveCamera(near, far, aspect, fov, cubeRenderTarget);
 
         // Initialize camera extrinsics with perspective camera
-        this.cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera);
+        WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera);
         return cubeCamera;
     }
 
     static cubeCameraTrackPerspectiveCamera(cCamera, pCamera) {
         // Update camera extrinsics with perspective camera's
-        const position = pCamera.position;
-        const quaternion = pCamera.quaternion;
-        cCamera.position.copy(position);
-
-        // Calculate "look at" vector
-        const up = pCamera.up;
-        const direction = new THREE.Vector3(0, 0, -1);
-        const lookAt = direction.applyQuaternion(quaternion);
-
-        // For some reason, setting quaternion directly flips cube camera
-        // upside down, so that none of the cameras match the camera we're
-        // copying.
-        cCamera.up.set(up.x, -up.y, up.z);
-        cCamera.lookAt(lookAt)
+        pCamera.updateMatrixWorld();
+        cCamera.updateMatrixWorld();
+        pCamera.getWorldPosition(cCamera.position);
+        pCamera.getWorldQuaternion(cCamera.quaternion);
+        cCamera.flip(); // Flip cube camera so the front matches the perspective camera
     }
 }
 

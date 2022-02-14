@@ -7,6 +7,7 @@
    <script src="js/demo.js"></script>
 
     <script src="../js/CubemapToEquirectangular.js"></script>
+    <script src="../js/CubePerspectiveCamera.js"></script>
     <script src="../js/WebGLCubeDepthExporter.js"></script>
     <script src="../js/Downloader.js"></script>
   </head> 
@@ -33,7 +34,7 @@
       // Use a cube camera so that we don't need to manually initialize the 6 
       // perspective cameras needed for a cubemap.
       const cubeCamera = THREE.WebGLCubeDepthExporter.cubeCameraFromPerspectiveCamera(camera);
-      scene.add(cubeCamera);
+      scene.add(cubeCamera); // !!IMPORTANT!! Do not forget. Otherwise, every face sees the same thing.
 
       // 1. Initialize depth exporter
       const cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer);
@@ -106,9 +107,13 @@
         // Update cube camera extrinsics to match perspective camera used for viewing
         THREE.WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, camera);
 
-        // Reset aspect ratio to 1. No idea why this is needed, but it is.
-        var ratio = getCubeCameraAspectRatio(cubeCamera);
-        setCubeCameraAspectRatio(cubeCamera, 1);
+        // Reset aspect ratio to 1. Otherwise, each face looks at too much or too
+        // little of the scene.
+        const aspect = cubeCamera.aspect;
+        const fov = cubeCamera.fov;
+        cubeCamera.aspect = 1;
+        cubeCamera.fov = 90;
+        cubeCamera.updateProjectionMatrix();
 
         // 2. Render depth in all directions to a cubemap
         cubeDepthExporter.setRenderTarget(cubeCamera.renderTarget);
@@ -122,17 +127,22 @@
         equi.convert( cubeCamera );
 
         // Restore aspect ratio
-        setCubeCameraAspectRatio(cubeCamera, ratio);
+        cubeCamera.aspect = aspect;
+        cubeCamera.fov = fov;
+        cubeCamera.updateProjectionMatrix();
       }
 
       document.getElementById( 'capture' ).addEventListener( 'click', download360Equirectangular);
 
       function onWindowResize() {
         renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
         // Set aspect ratios for both sets of cameras
         camera.aspect = canvas.clientWidth / canvas.clientHeight;
         camera.updateProjectionMatrix();
-        setCubeCameraAspectRatio(cubeCamera, canvas.clientWidth / canvas.clientHeight);
+        cubeCamera.aspect = canvas.clientWidth / canvas.clientHeight
+        cubeCamera.updateProjectionMatrix();
+
         // Update depth exporter size when window size changes
         depthExporter.setSize(canvas.width, canvas.height);
         cubeDepthExporter.setSize(canvas.width, canvas.height);
@@ -140,21 +150,6 @@
 
       onWindowResize();
       window.addEventListener('resize', onWindowResize);
-
-      /**
-       * Utilities
-       */
-
-      function getCubeCameraAspectRatio(cubeCamera) {
-        return cubeCamera.children[0].aspect;
-      }
-
-      function setCubeCameraAspectRatio(cubeCamera, aspect) {
-        for (let camera of cubeCamera.children) {
-          camera.aspect = aspect;
-          camera.updateProjectionMatrix();
-        }
-      }
     </script>
   </body>
 </html>
