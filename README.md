@@ -76,11 +76,11 @@ equi.convert(cubeCamera);
 
 See these examples for working demos and annotated source code:
 
-- [Hello World](http://alvinwan.com/threejs.depth/examples/basic.html) - basic 3 steps to extract depth from a scene
-- [Higher-Precision Depth](http://alvinwan.com/threejs.depth/examples/precision.html) - export a higher-precision depth using base 256 numbers encoded in RGB channels
-- [Download Depth Map](http://alvinwan.com/threejs.depth/examples/export.html) - export and download a depth map
-- [Download 360 Depth Map](http://alvinwan.com/threejs.depth/examples/export360.html) - export 360 depth using a cube camera and download an equirectangular depth map
-- [Aframe](http://alvinwan.com/threejs.depth/examples/aframe.html) - aframe hello world scene with both rectilinear and equirectangular depth map downloads
+- [Hello World](http://alvinwan.com/three.depth.js/examples/basic.html) - basic 3 steps to extract depth from a scene
+- [Download Depth Map](http://alvinwan.com/three.depth.js/examples/download.html) - download a depth map
+- [Higher-Precision Depth](http://alvinwan.com/three.depth.js/examples/precision.html) - download a higher-precision depth map using base 256 numbers encoded in RGB channels
+- [Download 360 Depth Map](http://alvinwan.com/three.depth.js/examples/download360.html) - download 360 depth map in equirectangular format
+- [Aframe](http://alvinwan.com/three.depth.js/examples/aframe.html) - aframe hello world scene with both rectilinear and equirectangular depth map downloads
 
 ## How it Works
 
@@ -88,11 +88,9 @@ The technique to grab depth is used in the [official three.js examples](https://
 
 The nice part is that three.js already computes the depth of each pixel, from a given camera, when rendering. However, the problem is that this depth is not directly accessible. Instead, (1) the depth texture can be rendered as a color texture in a second scene, and (2) that color texture can then be read.
 
-1. The depth texture loses precision during the translation into discretized color values, so for higher precision ([example](http://alvinwan.com/threejs.depth/examples/precision.html)), you can use a base 256 representation for depth.
+1. The depth texture loses precision during the translation into discretized color values, so for higher precision ([example](http://alvinwan.com/three.depth.js/examples/precision.html)), you can use a base 256 representation for depth.
 
 2. The color texture in your second scene is applied to a flat plane. The camera in this scene is an orthographic camera pointed at the flat plane. Once this second scene is rendered to a render target your choice, you then have a depth map to do whatever you want with!
-
-In the examples above, we show how to display this depth map ([example](http://alvinwan.com/threejs.depth/examples/basic.html)), download the depth map ([example](http://alvinwan.com/threejs.depth/examples/export.html)), and download a 360 depth map in equirectangular format ([example](http://alvinwan.com/threejs.depth/examples/export360.html))
 
 ## "Deploy"
 
