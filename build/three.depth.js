@@ -1,3 +1,168 @@
+function registerThreeDepthJsAframeComponents() {
+  DEPTH_PACKING = {
+    rgba: THREE.RGBADepthPacking,
+    basic: THREE.BasicDepthPacking,
+  }
+
+  // Grab default three.js objects from Aframe
+  function getAframeObject3Ds(el) {
+      const renderer = el.renderer;
+      const scene = el.sceneEl.object3D;
+      const camera = document.querySelector('[camera]').getObject3D('camera');
+
+      return {renderer, scene, camera};
+  } 
+
+  AFRAME.registerComponent('download-depth-map-on-load', {
+      schema: {
+        packing: {type: 'string', default: 'basic'},
+      },
+      init: function() {
+        // Grab default three.js objects from Aframe
+        let {renderer, scene, camera} = getAframeObject3Ds(this.el);
+        let {packing} = this.data;
+
+        // 1. Initialize depth exporter
+        packing = DEPTH_PACKING[packing];
+        this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing});
+
+        // 2. Update the depth exporter size
+        let canvas = renderer.domElement;
+        this.depthExporter.setSize(canvas.width, canvas.height);
+
+        // 3. Download depth map on key press
+        this.depthExporter.download(scene, camera);
+      },
+  });
+
+  AFRAME.registerComponent('preview-depth-map', {
+    schema: {
+      packing: {type: 'string', default: 'basic'},
+      toggleKey: {type: 'string', default: 'c'},
+      id: {type: 'string', default: '#debug'},
+    },
+    init: function() {
+      // Grab default three.js objects from Aframe
+      let {renderer, scene, camera} = getAframeObject3Ds(this.el);
+      let {packing, toggleKey, id} = this.data;
+
+      const aframeCanvas = renderer.domElement;
+
+      // Create a canvas
+      const canvas = document.createElement( 'canvas' );
+      canvas.setAttribute('id', id);
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vh';
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.zIndex = '10';
+      document.body.appendChild(canvas); // Append to body
+
+      // Initialize renderer with the current canvas
+      renderer = new THREE.WebGLRenderer({canvas}); // replace renderer with our own
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+      // 1. Initialize depth exporters
+      packing = DEPTH_PACKING[packing];
+      this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing});
+
+      // 2. Update the depth exporter size
+      this.depthExporter.setSize(canvas.width, canvas.height);
+
+      // 3. Create a cube camera tracking the aframe camera
+      this.cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
+      scene.add(this.cubeCamera);
+
+      // 4. Pick camera to render, based on key press
+      const self = this;
+      this.canvasCameraIndex = -1;
+      this.isPreviewVisible = true;
+      document.addEventListener('keypress', function(e) {
+        if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+          self.canvasCameraIndex = parseInt(e.key) - 1;
+        } else if (e.key == '0') {
+          self.canvasCameraIndex = -1;
+        } else if (e.key == toggleKey) {
+          self.isPreviewVisible = !self.isPreviewVisible;
+          canvas.style.display = self.isPreviewVisible ? 'block' : 'none';
+          aframeCanvas.style.display = self.isPreviewVisible ? 'none' : 'block';
+        }
+      });
+    },
+    tick: function() {
+      if (this.canvasCameraIndex && this.isPreviewVisible) {
+        let {scene, camera} = getAframeObject3Ds(this.el);
+
+        // 5. Prepare cube camera for display
+        const canvas = this.depthExporter.renderer.domElement;
+        this.cubeCamera.updateIntrinsicsForDisplay(camera, canvas);
+        this.cubeCamera.updateExtrinsicsWith(camera);
+
+        // 6. Render depth to canvas
+        const previewCamera = this.canvasCameraIndex > -1 ?
+          this.cubeCamera.children[this.canvasCameraIndex] : camera;
+        this.depthExporter.setRenderTarget(null);
+        this.depthExporter.render(scene, previewCamera);
+        this.depthExporter.setRenderTarget(null);
+      }
+    }
+  });
+
+  AFRAME.registerComponent('download-depth-map', {
+    schema: {
+        downloadKey: {type: 'string', default: 'p'},
+        download360Key: {type: 'string', default: ' '},
+        packing: {type: 'string', default: 'basic'},
+    },
+    init: function() {
+      // Grab default three.js objects from Aframe
+      let {renderer, scene, camera} = getAframeObject3Ds(this.el);
+      let {packing, downloadKey, download360Key} = this.data;
+      let canvas = renderer.domElement;
+
+      // 1. Initialize depth exporters and helpers
+      this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing}); // for 2d depth map
+      this.depthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
+      this.cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {packing}); // for 3d depth map
+      const equi = new CubemapToEquirectangular( renderer, false ); // for equirectangular projection
+
+      // 2. Create a cube camera tracking the aframe camera
+      this.cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
+      scene.add(this.cubeCamera);
+
+      const self = this;
+      document.addEventListener('keypress', function(e) {
+        if (e.key == downloadKey) {
+          // 3. Update the depth exporters size
+          self.depthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
+
+          // 4. Download 2d depth map on key press
+          self.depthExporter.download(scene, camera);
+        } else if (e.key == download360Key) {
+          // 3. Update the depth exporters size
+          self.cubeDepthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
+
+          // 4. Update camera intrinsics and extrinsics for export
+          self.cubeCamera.updateIntrinsicsForExport();
+          self.cubeCamera.updateExtrinsicsWith(camera);
+
+          // 5. Render depth in all directions to a cubemap
+          self.cubeDepthExporter.setRenderTarget(self.cubeCamera.renderTarget);
+          self.cubeDepthExporter.render(scene, self.cubeCamera);
+          self.cubeDepthExporter.setRenderTarget(null);
+
+          // 6. Download equirectangular depth map
+          equi.convert(self.cubeCamera);
+        }
+      });
+    },
+  });
+}
+
+if (AFRAME) {
+  registerThreeDepthJsAframeComponents();
+}
 class CubeOrthographicCamera extends THREE.CubeCamera {
 
 	constructor( left, right, top, bottom, near, far, renderTarget ) {
@@ -408,65 +573,6 @@ class Downloader {
         return flipped;
     }
 }
-class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
-    render(scene, cubeCamera) {
-        // Get original render target
-        var renderTarget = this.renderer.getRenderTarget();
-        var activeCubeFace = this.renderer.getActiveCubeFace();
-
-        // Render the depth texture to all faces of the cube, one at a time
-        for (let curCubeFace = 0; curCubeFace < 6; curCubeFace++) {
-            let invisibleCamera = cubeCamera.children[curCubeFace]; // camera in invisible space
-
-            // draw render target scene to render target
-            this.renderer.setRenderTarget(this.invisibleRenderTarget);
-            this.renderer.render(scene, invisibleCamera);
-            this.renderer.setRenderTarget(null);
-            
-            // render the depth texture to the provided target
-            this.renderer.setRenderTarget(renderTarget, curCubeFace);
-            this.renderer.render(this.depthScene, this.depthCamera);
-            this.renderer.setRenderTarget(null);
-        }
-
-        // Restore original render target
-        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
-    }
-
-    toImage() {
-        console.warn(
-            'WebGLCubeDepthExporter.toImage() by default only exports ' +
-            'the last face of the cube. Instead, use Downloader.renderTargetDepthToImage()' +
-            'on the cube render target.'
-        );
-        return super.toImage();
-    }
-
-    static cubeCameraFromPerspectiveCamera(perspectiveCamera) {
-        // Initialize camera intrinsics with perspective camera
-        const near = perspectiveCamera.near;
-        const far = perspectiveCamera.far;
-        const aspect = perspectiveCamera.aspect;
-        const fov = perspectiveCamera.fov;
-        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-        const cubeCamera = new THREE.CubePerspectiveCamera(near, far, aspect, fov, cubeRenderTarget);
-
-        // Initialize camera extrinsics with perspective camera
-        WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera);
-        return cubeCamera;
-    }
-
-    static cubeCameraTrackPerspectiveCamera(cCamera, pCamera) {
-        // Update camera extrinsics with perspective camera's
-        pCamera.updateMatrixWorld();
-        cCamera.updateMatrixWorld();
-        pCamera.getWorldPosition(cCamera.position);
-        pCamera.getWorldQuaternion(cCamera.quaternion);
-        cCamera.flip(); // Flip cube camera so the front matches the perspective camera
-    }
-}
-
-THREE.WebGLCubeDepthExporter = WebGLCubeDepthExporter;
 /**
  * Args:
  *   renderer: the renderer to export the depth from
@@ -622,168 +728,62 @@ class WebGLDepthExporterShaders {
 }
 
 THREE.WebGLDepthExporter = WebGLDepthExporter;
-function registerThreeDepthJsAframeComponents() {
-  DEPTH_PACKING = {
-    rgba: THREE.RGBADepthPacking,
-    basic: THREE.BasicDepthPacking,
-  }
+class WebGLCubeDepthExporter extends THREE.WebGLDepthExporter {
+    render(scene, cubeCamera) {
+        // Get original render target
+        var renderTarget = this.renderer.getRenderTarget();
+        var activeCubeFace = this.renderer.getActiveCubeFace();
 
-  // Grab default three.js objects from Aframe
-  function getAframeObject3Ds(el) {
-      const renderer = el.renderer;
-      const scene = el.sceneEl.object3D;
-      const camera = document.querySelector('[camera]').getObject3D('camera');
+        // Render the depth texture to all faces of the cube, one at a time
+        for (let curCubeFace = 0; curCubeFace < 6; curCubeFace++) {
+            let invisibleCamera = cubeCamera.children[curCubeFace]; // camera in invisible space
 
-      return {renderer, scene, camera};
-  } 
-
-  AFRAME.registerComponent('download-depth-map-on-load', {
-      schema: {
-        packing: {type: 'string', default: 'basic'},
-      },
-      init: function() {
-        // Grab default three.js objects from Aframe
-        let {renderer, scene, camera} = getAframeObject3Ds(this.el);
-        let {packing} = this.data;
-
-        // 1. Initialize depth exporter
-        packing = DEPTH_PACKING[packing];
-        this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing});
-
-        // 2. Update the depth exporter size
-        let canvas = renderer.domElement;
-        this.depthExporter.setSize(canvas.width, canvas.height);
-
-        // 3. Download depth map on key press
-        this.depthExporter.download(scene, camera);
-      },
-  });
-
-  AFRAME.registerComponent('preview-depth-map', {
-    schema: {
-      packing: {type: 'string', default: 'basic'},
-      toggleKey: {type: 'string', default: 'c'},
-      id: {type: 'string', default: '#debug'},
-    },
-    init: function() {
-      // Grab default three.js objects from Aframe
-      let {renderer, scene, camera} = getAframeObject3Ds(this.el);
-      let {packing, toggleKey, id} = this.data;
-
-      const aframeCanvas = renderer.domElement;
-
-      // Create a canvas
-      const canvas = document.createElement( 'canvas' );
-      canvas.setAttribute('id', id);
-      canvas.style.width = '100vw';
-      canvas.style.height = '100vh';
-      canvas.style.position = 'absolute';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      canvas.style.zIndex = '10';
-      document.body.appendChild(canvas); // Append to body
-
-      // Initialize renderer with the current canvas
-      renderer = new THREE.WebGLRenderer({canvas}); // replace renderer with our own
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-      // 1. Initialize depth exporters
-      packing = DEPTH_PACKING[packing];
-      this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing});
-
-      // 2. Update the depth exporter size
-      this.depthExporter.setSize(canvas.width, canvas.height);
-
-      // 3. Create a cube camera tracking the aframe camera
-      this.cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
-      scene.add(this.cubeCamera);
-
-      // 4. Pick camera to render, based on key press
-      const self = this;
-      this.canvasCameraIndex = -1;
-      this.isPreviewVisible = true;
-      document.addEventListener('keypress', function(e) {
-        if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
-          self.canvasCameraIndex = parseInt(e.key) - 1;
-        } else if (e.key == '0') {
-          self.canvasCameraIndex = -1;
-        } else if (e.key == toggleKey) {
-          self.isPreviewVisible = !self.isPreviewVisible;
-          canvas.style.display = self.isPreviewVisible ? 'block' : 'none';
-          aframeCanvas.style.display = self.isPreviewVisible ? 'none' : 'block';
+            // draw render target scene to render target
+            this.renderer.setRenderTarget(this.invisibleRenderTarget);
+            this.renderer.render(scene, invisibleCamera);
+            this.renderer.setRenderTarget(null);
+            
+            // render the depth texture to the provided target
+            this.renderer.setRenderTarget(renderTarget, curCubeFace);
+            this.renderer.render(this.depthScene, this.depthCamera);
+            this.renderer.setRenderTarget(null);
         }
-      });
-    },
-    tick: function() {
-      if (this.canvasCameraIndex && this.isPreviewVisible) {
-        let {scene, camera} = getAframeObject3Ds(this.el);
 
-        // 5. Prepare cube camera for display
-        const canvas = this.depthExporter.renderer.domElement;
-        this.cubeCamera.updateIntrinsicsForDisplay(camera, canvas);
-        this.cubeCamera.updateExtrinsicsWith(camera);
-
-        // 6. Render depth to canvas
-        const previewCamera = this.canvasCameraIndex > -1 ?
-          this.cubeCamera.children[this.canvasCameraIndex] : camera;
-        this.depthExporter.setRenderTarget(null);
-        this.depthExporter.render(scene, previewCamera);
-        this.depthExporter.setRenderTarget(null);
-      }
+        // Restore original render target
+        this.renderer.setRenderTarget(renderTarget, activeCubeFace);
     }
-  });
 
-  AFRAME.registerComponent('download-depth-map', {
-    schema: {
-        downloadKey: {type: 'string', default: 'p'},
-        download360Key: {type: 'string', default: ' '},
-        packing: {type: 'string', default: 'basic'},
-    },
-    init: function() {
-      // Grab default three.js objects from Aframe
-      let {renderer, scene, camera} = getAframeObject3Ds(this.el);
-      let {packing, downloadKey, download360Key} = this.data;
-      let canvas = renderer.domElement;
+    toImage() {
+        console.warn(
+            'WebGLCubeDepthExporter.toImage() by default only exports ' +
+            'the last face of the cube. Instead, use Downloader.renderTargetDepthToImage()' +
+            'on the cube render target.'
+        );
+        return super.toImage();
+    }
 
-      // 1. Initialize depth exporters and helpers
-      this.depthExporter = new THREE.WebGLDepthExporter(renderer, {packing}); // for 2d depth map
-      this.depthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
-      this.cubeDepthExporter = new THREE.WebGLCubeDepthExporter(renderer, {packing}); // for 3d depth map
-      const equi = new CubemapToEquirectangular( renderer, false ); // for equirectangular projection
+    static cubeCameraFromPerspectiveCamera(perspectiveCamera) {
+        // Initialize camera intrinsics with perspective camera
+        const near = perspectiveCamera.near;
+        const far = perspectiveCamera.far;
+        const aspect = perspectiveCamera.aspect;
+        const fov = perspectiveCamera.fov;
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
+        const cubeCamera = new THREE.CubePerspectiveCamera(near, far, aspect, fov, cubeRenderTarget);
 
-      // 2. Create a cube camera tracking the aframe camera
-      this.cubeCamera = THREE.CubePerspectiveCamera.fromPerspectiveCamera(camera);
-      scene.add(this.cubeCamera);
+        // Initialize camera extrinsics with perspective camera
+        WebGLCubeDepthExporter.cubeCameraTrackPerspectiveCamera(cubeCamera, perspectiveCamera);
+        return cubeCamera;
+    }
 
-      const self = this;
-      document.addEventListener('keypress', function(e) {
-        if (e.key == downloadKey) {
-          // 3. Update the depth exporters size
-          self.depthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
-
-          // 4. Download 2d depth map on key press
-          self.depthExporter.download(scene, camera);
-        } else if (e.key == download360Key) {
-          // 3. Update the depth exporters size
-          self.cubeDepthExporter.setSize(canvas.clientWidth, canvas.clientHeight);
-
-          // 4. Update camera intrinsics and extrinsics for export
-          self.cubeCamera.updateIntrinsicsForExport();
-          self.cubeCamera.updateExtrinsicsWith(camera);
-
-          // 5. Render depth in all directions to a cubemap
-          self.cubeDepthExporter.setRenderTarget(self.cubeCamera.renderTarget);
-          self.cubeDepthExporter.render(scene, self.cubeCamera);
-          self.cubeDepthExporter.setRenderTarget(null);
-
-          // 6. Download equirectangular depth map
-          equi.convert(self.cubeCamera);
-        }
-      });
-    },
-  });
+    static cubeCameraTrackPerspectiveCamera(cCamera, pCamera) {
+        // Update camera extrinsics with perspective camera's
+        pCamera.updateMatrixWorld();
+        cCamera.updateMatrixWorld();
+        pCamera.getWorldPosition(cCamera.position);
+        pCamera.getWorldQuaternion(cCamera.quaternion);
+        cCamera.flip(); // Flip cube camera so the front matches the perspective camera
+    }
 }
 
-if (AFRAME) {
-  registerThreeDepthJsAframeComponents();
-}
+THREE.WebGLCubeDepthExporter = WebGLCubeDepthExporter;

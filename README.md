@@ -105,6 +105,7 @@ The nice part is that three.js already computes the depth of each pixel, from a 
 
 ## "Deploy"
 
-```
-awk '{print $0}' js/*.js > build/three.depth.js
+```bash
+rm -f build/three.depth.js
+for files in js/{a,C,D}*.js js/WebGLDepthExporter.js js/WebGLCubeDepthExporter.js; do awk '{print $0}' ${files} >> build/three.depth.js; done;
 ```
