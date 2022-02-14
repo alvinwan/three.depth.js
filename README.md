@@ -1,4 +1,4 @@
-# Three.js Depth
+# three.depth.js
 
 Easily export depth maps from a three.js scene, using just a few lines of code. This is a more efficient alternative to replacing all materials in your scene with a `DepthMaterial`. Includes examples for:
 
@@ -78,7 +78,7 @@ See these examples for working demos and annotated source code:
 
 - [Hello World](http://alvinwan.com/three.depth.js/examples/basic.html) - basic 3 steps to extract depth from a scene
 - [Download Depth Map](http://alvinwan.com/three.depth.js/examples/download.html) - download a depth map
-- [Higher-Precision Depth](http://alvinwan.com/three.depth.js/examples/precision.html) - download a higher-precision depth map using base 256 numbers encoded in RGB channels
+- [Higher-Precision Depth](http://alvinwan.com/three.depth.js/examples/precision.html) - download a higher-precision depth map by packing depth into RGB
 - [Download 360 Depth Map](http://alvinwan.com/three.depth.js/examples/download360.html) - download 360 depth map in equirectangular format
 - [Aframe](http://alvinwan.com/three.depth.js/examples/aframe.html) - aframe hello world scene with both rectilinear and equirectangular depth map downloads
 
