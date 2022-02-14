@@ -662,12 +662,19 @@ function registerThreeDepthJsAframeComponents() {
   AFRAME.registerComponent('preview-depth-map', {
     schema: {
       packing: {type: 'string', default: 'basic'},
+      toggleKey: {type: 'string', default: 'c'},
       id: {type: 'string', default: '#debug'},
     },
     init: function() {
+      // Grab default three.js objects from Aframe
+      let {renderer, scene, camera} = getAframeObject3Ds(this.el);
+      let {packing, toggleKey, id} = this.data;
+
+      const aframeCanvas = renderer.domElement;
+
       // Create a canvas
       const canvas = document.createElement( 'canvas' );
-      canvas.setAttribute('id', this.data.id);
+      canvas.setAttribute('id', id);
       canvas.style.width = '100vw';
       canvas.style.height = '100vh';
       canvas.style.position = 'absolute';
@@ -675,10 +682,6 @@ function registerThreeDepthJsAframeComponents() {
       canvas.style.left = '0';
       canvas.style.zIndex = '10';
       document.body.appendChild(canvas); // Append to body
-
-      // Grab default three.js objects from Aframe
-      let {scene, camera} = getAframeObject3Ds(this.el);
-      let {packing} = this.data;
 
       // Initialize renderer with the current canvas
       renderer = new THREE.WebGLRenderer({canvas}); // replace renderer with our own
@@ -698,16 +701,21 @@ function registerThreeDepthJsAframeComponents() {
       // 4. Pick camera to render, based on key press
       const self = this;
       this.canvasCameraIndex = -1;
+      this.isPreviewVisible = true;
       document.addEventListener('keypress', function(e) {
         if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
           self.canvasCameraIndex = parseInt(e.key) - 1;
         } else if (e.key == '0') {
           self.canvasCameraIndex = -1;
+        } else if (e.key == toggleKey) {
+          self.isPreviewVisible = !self.isPreviewVisible;
+          canvas.style.display = self.isPreviewVisible ? 'block' : 'none';
+          aframeCanvas.style.display = self.isPreviewVisible ? 'none' : 'block';
         }
       });
     },
     tick: function() {
-      if (this.canvasCameraIndex) {
+      if (this.canvasCameraIndex && this.isPreviewVisible) {
         let {scene, camera} = getAframeObject3Ds(this.el);
 
         // 5. Prepare cube camera for display
